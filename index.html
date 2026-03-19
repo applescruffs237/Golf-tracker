@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+
+<!-- Tempo | Version: 0.5.23 | Build date: 2026-03-19 -->
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="theme-color" content="#02040c"/>
+  <script>
+    const APP = Object.freeze({
+      VERSION: '0.5.23',
+      BUILD_DATE: '2026-03-19',
+      CALIBRATION_MODEL: 'v3_player_derived',
+      CALIBRATION_MODEL_LABEL: 'v3 player-derived (BS × 1.31)',
+      STORAGE_KEY: 'square_golf_tracker_state',
+      EXPORT_FILENAME: () => `tempo-backup-v${APP.VERSION}.json`,
+      TABS: [
+        { key: 'sessions',    label: 'Sessions',    icon: '◎' },
+        { key: 'fingerprint', label: 'My Game',     icon: '⬡' },
+        { key: 'progress',    label: 'Progress',    icon: '↗' },
+        { key: 'settings',    label: 'Settings',    icon: '⚙' }
+      ]
+    });
+  </script>
+  <title>Tempo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #02040c;
+      --surface:   #070916;
+      --surface2:  #0d1020;
+      --surface3:  #141828;
+      --border:    #182038;
+      --border2:   #223050;
+      --text:      #e8eaf2;
+      --text2:     #8892aa;
+      --muted:     #4a5468;
+      --accent:    #3d7eff;
+      --accent2:   #6699ff;
+      --great:     #27c97a;
+      --stock:     #3d7eff;
+      --playable:  #e8a020;
+      --miss:      #f05a35;
+      --cat:       #e8184a;
+      --good:      #27c97a;
+      --acceptable:#e8a020;
+      --radius:    10px;
+      --radius-sm: 6px;
+      --mono:      'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --head:      'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      --sans:      'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; background: var(--bg); min-height: 100%; overscroll-behavior: none; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.5;
+      padding-bottom: calc(72px + env(safe-area-inset-bottom));
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      overscroll-behavior-y: none;
+    }
+    button, .file-label, input, select, textarea {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+    }
+    .app { max-width: 860px; margin: 0 auto; padding: 20px 14px 28px; }
+
+```
+/* ── Typography ── */
+.t-label { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.t-head  { font-family: var(--head); font-weight: 700; font-size: 24px; letter-spacing: -.02em; line-height: 1.15; text-transform: none; }
+.t-sub   { font-size: 13px; color: var(--text2); }
+.t-mono  { font-family: var(--mono); }
+
+/* ── Top bar ── */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.app-name { font-family: var(--head); font-weight: 700; font-size: 30px; letter-spacing: -.03em; text-transform: none; color: var(--text); line-height: 1; }
+.app-version { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: .06em; }
+.global-toggle { display: inline-flex; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px; gap: 2px; flex-shrink: 0; }
+.gt-btn { font-family: var(--mono); font-size: 11px; padding: 6px 11px; border-radius: 4px; border: 0; background: transparent; color: var(--muted); cursor: pointer; transition: all .15s; white-space: nowrap; letter-spacing: .04em; }
+.gt-btn.active { background: var(--accent); color: #fff; }
+
+/* ── Nav ── */
+.fixed-nav { position: fixed; left: 0; right: 0; bottom: 0; background: #080a10; background: rgba(6,8,16,.97); backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%); border-top: 1px solid var(--border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 40; }
+.nav-inner { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+.nav-btn { border: 0; background: transparent; color: var(--muted); border-radius: var(--radius-sm); padding: 7px 4px 5px; font-size: 10px; font-family: var(--mono); letter-spacing: .06em; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color .15s; text-transform: uppercase; }
+.nav-btn .nav-icon { font-size: 15px; line-height: 1; }
+.nav-btn.active { color: var(--accent2); }
+
+/* ── Screens ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── Cards ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+
+/* ── Section header ── */
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 8px; }
+.sec-head .sh-title { font-family: var(--head); font-weight: 700; font-size: 20px; text-transform: none; letter-spacing: -.02em; color: var(--text2); }
+
+/* ── Grid ── */
+.g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+
+/* ── Metric tile ── */
+.mtile { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 10px; }
+.mtile .ml { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.mtile .mv { font-size: 18px; font-weight: 600; letter-spacing: -.01em; line-height: 1.2; }
+.mtile .ms { font-size: 10px; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
+
+/* ── Grade chips ── */
+.grade-chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 4px; padding: 3px 8px; font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+.gc-great    { background: rgba(39,201,122,.18); color: var(--great);    border: 1px solid rgba(39,201,122,.35); }
+.gc-stock    { background: rgba(61,126,255,.18); color: var(--stock);    border: 1px solid rgba(61,126,255,.35); }
+.gc-playable { background: rgba(232,160,32,.18); color: var(--playable); border: 1px solid rgba(232,160,32,.35); }
+.gc-miss     { background: rgba(240,90,53,.18);  color: var(--miss);     border: 1px solid rgba(240,90,53,.35); }
+.gc-good     { background: rgba(39,201,122,.18); color: var(--good);     border: 1px solid rgba(39,201,122,.35); }
+.gc-acceptable { background: rgba(232,160,32,.18); color: var(--acceptable); border: 1px solid rgba(232,160,32,.35); }
+
+/* ── Grade dot ── */
+.gdot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+/* ── Club pill tabs ── */
+.club-tabs { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px; }
+.club-tab { font-family: var(--mono); font-size: 11px; padding: 5px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; white-space: nowrap; transition: all .15s; letter-spacing: .04em; }
+.club-tab.active { border-color: var(--accent); color: var(--accent2); background: rgba(61,126,255,.12); }
+
+/* ── Session list item ── */
+.session-item { background: var(--surface) !important; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; transition: border-color .15s; width: 100%; text-align: left; display: block; color: var(--text); }
+.session-item:hover { border-color: var(--border2); }
+.session-item.active { border-color: var(--accent); background: rgba(61,126,255,.08) !important; }
+.session-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+
+/* ── Shot table ── */
+.shot-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.shot-table th { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: left; }
+.shot-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.shot-table tr:last-child td { border-bottom: 0; }
+.shot-table tr { cursor: pointer; transition: background .1s; }
+.shot-table tr:hover td { background: var(--surface2); }
+
+/* ── Insight card ── */
+.insight-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+.insight-card .ic-tag { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; }
+.insight-card .ic-title { font-family: var(--head); font-weight: 600; font-size: 15px; letter-spacing: .02em; margin-bottom: 5px; line-height: 1.2; }
+.insight-card .ic-body { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.insight-card.ic-positive { border-color: rgba(39,201,122,.35); background: rgba(39,201,122,.06); }
+.insight-card.ic-warning  { border-color: rgba(232,160,32,.35);  background: rgba(232,160,32,.06); }
+.insight-card.ic-alert    { border-color: rgba(240,90,53,.35);    background: rgba(240,90,53,.06); }
+
+/* ── Fingerprint block ── */
+.fp-block { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px; }
+.fp-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.fp-row:last-child { border-bottom: 0; }
+.fp-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.fp-value { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+
+/* ── Gapping table ── */
+.gap-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.gap-table th { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+.gap-table td { padding: 8px 8px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 13px; }
+.gap-table tr:last-child td { border-bottom: 0; }
+.gap-table tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+
+/* ── SVG plots ── */
+.plot-wrap { background: #04060e; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+svg text { font-family: 'Inter', sans-serif; }
+
+/* ── Dispersion plot — SVG sized to content, no overflow tricks ── */
+.disp-svg-wrap {
+  background: #04060e;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-bottom: 0;
+  overflow: hidden;
+}
+.disp-svg-wrap svg {
+  width: 100%;
+  display: block;
+}
+.disp-legend-centered { display:flex; justify-content:center; gap:14px; flex-wrap:wrap; padding:6px 0 2px; font-family:var(--mono); font-size:10px; color:var(--muted); }
+
+/* ── Dispersion inline stats panel ── */
+.disp-stats {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.disp-stats-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px 5px;
+  border-bottom: 1px solid var(--border);
+}
+.disp-stats-label {
+  font-family: var(--head);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -.01em;
+  text-transform: none;
+  color: var(--text2);
+}
+.disp-grade-chip {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.disp-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+}
+.disp-stats-row + .disp-stats-row { border-top: 1px solid var(--border); }
+.disp-stat-cell { background: var(--surface); padding: 7px 8px; text-align: center; }
+.disp-stat-cell .dsl { font-family: var(--mono); font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 2px; }
+.disp-stat-cell .dsv { font-family: var(--mono); font-size: 13px; font-weight: 600; line-height: 1.2; color: var(--text); }
+.disp-stat-cell .dsv.dim { color: var(--text2); }
+
+/* ── Progress metric card ── */
+.progress-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; }
+.progress-card .pc-label { font-family: var(--mono); font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 4px; }
+.progress-card .pc-value { font-family: var(--head); font-weight: 700; font-size: 28px; letter-spacing: .02em; line-height: 1.1; margin-bottom: 2px; }
+.progress-card .pc-delta { font-family: var(--mono); font-size: 11px; }
+.delta-up   { color: var(--great); }
+.delta-down { color: var(--miss); }
+.delta-flat { color: var(--muted); }
+
+/* ── Divider ── */
+.divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+/* ── Row util ── */
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* ── Empty state ── */
+.empty { padding: 28px 14px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: var(--radius); font-size: 13px; line-height: 1.6; }
+
+/* ── Buttons ── */
+button, .file-label { font-family: var(--mono); font-size: 12px; letter-spacing: .05em; border: 0; border-radius: var(--radius-sm); padding: 9px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: opacity .15s; text-transform: uppercase; }
+.btn-primary   { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+.btn-danger    { background: var(--cat); color: #fff; }
+button:active, .file-label:active { opacity: .7; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.file-input { display: none; }
+
+/* ── Settings inputs ── */
+.settings-label { display: flex; flex-direction: column; gap: 5px; font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.settings-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; color: var(--text); font-family: var(--mono); font-size: 13px; }
+.settings-input:focus { outline: none; border-color: var(--accent); }
+.settings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+
+/* ── Modal ── */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: flex-end; justify-content: center; z-index: 60; }
+.modal-backdrop.open { display: flex; }
+.modal { width: min(100%, 860px); max-height: 88vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border2); border-top: 1px solid var(--border2); border-radius: 12px 12px 0 0; padding: 14px 14px calc(18px + env(safe-area-inset-bottom)); }
+.modal-handle { width: 32px; height: 3px; background: var(--border2); border-radius: 2px; margin: 0 auto 14px; }
+.close-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); border-radius: var(--radius-sm); width: 30px; height: 30px; font-size: 13px; display:inline-flex; align-items:center; justify-content:center; line-height:1; padding:0; }
+
+/* ── Confirm dialog ── */
+.dialog-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: none; align-items: center; justify-content: center; z-index: 70; padding: 14px; }
+.dialog-backdrop.open { display: flex; }
+.dialog { width: min(100%, 360px); background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 18px; }
+.dialog-actions { display: flex; gap: 7px; justify-content: flex-end; margin-top: 14px; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── Persistent strip ── */
+.strip-wrap { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; }
+.strip-scroll { display: flex; gap: 5px; overflow-x: auto; padding: 2px 0 2px; scrollbar-width: none; }
+.strip-scroll::-webkit-scrollbar { display: none; }
+.strip-pill { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; cursor: pointer; transition: all .15s; min-width: 62px; text-align: center; }
+.strip-pill:hover { border-color: var(--border2); }
+.strip-pill.active { border-color: var(--accent); background: rgba(61,126,255,.12); }
+.strip-pill .sp-top { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text); white-space: nowrap; }
+.strip-pill.active .sp-top { color: var(--accent2); }
+.strip-pill .sp-bot { font-family: var(--mono); font-size: 9px; color: var(--muted); white-space: nowrap; }
+.strip-pill.active .sp-bot { color: rgba(122,174,255,.65); }
+.strip-pill.bundle { min-width: 76px; }
+.import-icon-btn { flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); font-size: 15px; transition: border-color .15s, color .15s; }
+.import-icon-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+@media (max-width: 600px) {
+  .g3 { grid-template-columns: repeat(2, 1fr); }
+  .g4 { grid-template-columns: repeat(2, 1fr); }
+}
+```
+
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="app-name">Tempo</div>
+      <div class="app-version t-mono">v<span id="hdrVersion"></span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <label class="import-icon-btn" for="globalCsvInput" title="Import CSV or backup">⊕</label>
+      <input class="file-input" id="globalCsvInput" type="file" accept=".csv,.json"/>
+      <div id="globalToggle" class="global-toggle"></div>
+    </div>
+  </div>
+  <div class="strip-wrap" id="stripWrap">
+    <div class="strip-scroll" id="stripScroll"></div>
+  </div>
+
+  <section class="screen active" id="screen-sessions"></section>
+  <section class="screen" id="screen-fingerprint"></section>
+  <section class="screen" id="screen-progress"></section>
+  <section class="screen" id="screen-settings"></section>
+</div>
+
+<nav class="fixed-nav">
+  <div class="nav-inner" id="bottomNav"></div>
+</nav>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="row" style="margin-bottom:14px;">
+      <h3 id="modalTitle" style="font-family:var(--head);font-weight:700;font-size:18px;letter-spacing:-.01em;text-transform:none;"></h3>
+      <button class="close-btn" id="closeModal">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="dialog-backdrop" id="confirmBackdrop">
+  <div class="dialog">
+    <h3 id="confirmTitle" style="margin-bottom:8px;"></h3>
+    <div id="confirmBody" style="font-size:14px;color:var(--text2);"></div>
+    <div class="dialog-actions">
+      <button class="btn-secondary" id="confirmCancel">Cancel</button>
+      <button class="btn-danger" id="confirmOk">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.title = `Tempo`;
+document.getElementById('hdrVersion').textContent = APP.VERSION;
+
+// ── Defaults ──────────────────────────────────────────────────────────────────
+const DEFAULTS = {
+  calibrationView: 'raw',
+  selectedSessionId: null,
+  selectedBundle: 'all',
+  selectedGradeFilter: 'all',
+  selectedClubByScreen: {},
+  sessions: [],
+  settings: {
+    performanceClubs: ['7i','8i','9i','PW','UW','SW'],
+    directionalClubs: ['6i','5i','4H','3W','DR'],
+    directionalThresholds: { good: 1.2, acceptable: 2.3 },
+    performanceThresholds: { great: 3, stock: 6, playable: 12, miss: 20 },
+    startDirectionPerformance: { great: 0.6, stock: 1.2, playable: 2.0, miss: 3.0 },
+    ballSpeedSoftFloorPct: 0.92
+  },
+  calibration: {
+    '7i': { bsMult: 1.18, carryPerMph: 1.31, totalFactor: 1.06, source: 'player-derived v1' },
+    '8i': { bsMult: 1.14, carryPerMph: 1.31, totalFactor: 1.06, source: 'player-derived v1' },
+    '9i': { bsMult: 1.11, carryPerMph: 1.31, totalFactor: 1.05, source: 'player-derived v1' },
+    'PW': { bsMult: 1.09, carryPerMph: 1.31, totalFactor: 1.05, source: 'player-derived v1' },
+    'UW': { bsMult: 1.08, carryPerMph: 1.31, totalFactor: 1.04, source: 'player-derived v1' },
+    'SW': { bsMult: 1.07, carryPerMph: 1.31, totalFactor: 1.03, source: 'player-derived v1' },
+    '5i': { bsMult: 1.21, carryPerMph: 1.31, totalFactor: 1.07, source: 'fallback — not calibrated' },
+    '6i': { bsMult: 1.20, carryPerMph: 1.31, totalFactor: 1.07, source: 'fallback — not calibrated' },
+    '4H': { bsMult: 1.21, carryPerMph: 1.31, totalFactor: 1.08, source: 'fallback — not calibrated' },
+    '3W': { bsMult: 1.21, carryPerMph: 1.31, totalFactor: 1.08, source: 'fallback — not calibrated' },
+    'DR': { bsMult: 1.21, carryPerMph: 1.31, totalFactor: 1.08, source: 'fallback — not calibrated' }
+  }
+};
+
+let state = migrateState(loadState());
+let currentTab = 'sessions';
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function loadState() {
+  try {
+    const raw = localStorage.getItem(APP.STORAGE_KEY);
+    if (!raw) return clone(DEFAULTS);
+    return deepMerge(clone(DEFAULTS), JSON.parse(raw));
+  } catch { return clone(DEFAULTS); }
+}
+function migrateState(s) {
+  if (!s.settings) s.settings = clone(DEFAULTS.settings);
+  if (!s.calibration) s.calibration = clone(DEFAULTS.calibration);
+  for (const club of Object.keys(s.calibration)) {
+    const c = s.calibration[club];
+    if (!isFinite(c.bsMult)) c.bsMult = DEFAULTS.calibration[club]?.bsMult ?? 1;
+    if (!isFinite(c.carryPerMph)) c.carryPerMph = DEFAULTS.calibration[club]?.carryPerMph ?? 1.35;
+    if (!isFinite(c.totalFactor)) c.totalFactor = DEFAULTS.calibration[club]?.totalFactor ?? 1.05;
+    if (!c.source) c.source = DEFAULTS.calibration[club]?.source ?? 'migrated';
+  }
+  return s;
+}
+function deepMerge(base, inc) {
+  if (Array.isArray(base)) return Array.isArray(inc) ? inc : base;
+  const out = { ...base };
+  for (const k of Object.keys(inc || {})) {
+    const bv = base?.[k], iv = inc[k];
+    if (bv && typeof bv === 'object' && !Array.isArray(bv) && iv && typeof iv === 'object' && !Array.isArray(iv))
+      out[k] = deepMerge(bv, iv);
+    else out[k] = iv;
+  }
+  return out;
+}
+function saveState() { localStorage.setItem(APP.STORAGE_KEY, JSON.stringify(state)); }
+
+function sortd(a) { return [...a].filter(v => isFinite(v)).sort((a,b)=>a-b); }
+function median(a) {
+  const s = sortd(a); if (!s.length) return null;
+  const m = Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function pct(a, p) {
+  const s = sortd(a); if (!s.length) return null;
+  const idx = (s.length-1)*p, lo = Math.floor(idx), hi = Math.ceil(idx);
+  return lo===hi ? s[lo] : s[lo]+(s[hi]-s[lo])*(idx-lo);
+}
+function stddev(a) {
+  const f = a.filter(isFinite); if (f.length < 2) return null;
+  const m = f.reduce((s,v)=>s+v,0)/f.length;
+  return Math.sqrt(f.reduce((s,v)=>s+(v-m)**2,0)/f.length);
+}
+function fmt(v, d=1) { return isFinite(v) ? Number(v).toFixed(d).replace(/\.0$/,'') : '—'; }
+function fmtDir(v, d=1) {
+  if (!isFinite(v)) return '—';
+  if (Math.abs(v)<0.05) return '0';
+  return `${v>0?'R':'L'}${fmt(Math.abs(v),d)}°`;
+}
+function fmtOff(v, d=1) {
+  if (!isFinite(v)) return '—';
+  if (Math.abs(v)<0.05) return '0 yd';
+  return `${v>0?'R':'L'}${fmt(Math.abs(v),d)} yd`;
+}
+function pctStr(n,d) { return d ? Math.round(n/d*100)+'%' : '—'; }
+function pctNum(n,d) { return d ? Math.round(n/d*100) : null; }
+
+function clubMode(c) {
+  if (state.settings.performanceClubs.includes(c)) return 'performance';
+  if (state.settings.directionalClubs.includes(c)) return 'directional';
+  return 'performance';
+}
+function sortClub(c) {
+  return ({DR:1,'3W':2,'4H':3,'5i':4,'6i':5,'7i':6,'8i':7,'9i':8,PW:9,UW:10,SW:11})[c]||99;
+}
+function normaliseClub(raw) {
+  const v = String(raw||'').trim().toLowerCase();
+  const map = {
+    '7 iron':'7i','8 iron':'8i','9 iron':'9i','6 iron':'6i','5 iron':'5i',
+    'pitching wedge':'PW','pw':'PW','pw (44°)':'PW','pw (44)':'PW',
+    'uw':'UW','uw (49°)':'UW','uw (49)':'UW',
+    'sw':'SW','sw (~54°)':'SW','sw (~54)':'SW','sand wedge':'SW',
+    '3 wood':'3W','3w':'3W','4 hybrid':'4H','4h':'4H','driver':'DR','dr':'DR'
+  };
+  if (map[v]) return map[v];
+  const m = v.match(/^(\d)\s*iron$/);
+  if (m) return `${m[1]}i`;
+  return String(raw||'').trim();
+}
+function getCalibration(club) {
+  return state.calibration[club]||{bsMult:1,carryPerMph:1.35,totalFactor:1.05,source:'fallback'};
+}
+function getMetric(shot, key, view=state.calibrationView) {
+  const raw = shot[key];
+  if (raw==null||isNaN(raw)) return null;
+  if (view==='raw') return raw;
+  const cal = getCalibration(shot.club);
+  const estBS = isFinite(shot.ballSpeed) ? shot.ballSpeed*(cal.bsMult||1) : null;
+  if (key==='ballSpeed') return estBS;
+  if (key==='carry') return isFinite(estBS) ? estBS*(cal.carryPerMph||1) : null;
+  if (key==='total') {
+    const estC = isFinite(estBS) ? estBS*(cal.carryPerMph||1) : null;
+    return isFinite(estC) ? estC*(cal.totalFactor||1) : null;
+  }
+  return raw;
+}
+function faceToPath(shot) {
+  if (!isFinite(shot.faceAngle)||!isFinite(shot.clubPath)) return null;
+  return shot.faceAngle-shot.clubPath;
+}
+
+const GRADE_ORDER = ['great','stock','playable','miss'];
+function gradeColor(g) {
+  return ({great:'var(--great)',stock:'var(--stock)',playable:'var(--playable)',miss:'var(--miss)',good:'var(--good)',acceptable:'var(--acceptable)'})[g]||'var(--muted)';
+}
+function gradeLabel(g) {
+  return ({great:'Great',stock:'Stock',playable:'Playable',miss:'Miss',good:'Good rep',acceptable:'Acceptable'})[g]||g;
+}
+function gradeCssClass(g) {
+  return ({great:'gc-great',stock:'gc-stock',playable:'gc-playable',miss:'gc-miss',good:'gc-good',acceptable:'gc-acceptable'})[g]||'';
+}
+function gradeRgb(g) {
+  return ({great:'39,201,122',stock:'61,126,255',playable:'232,160,32',miss:'240,90,53'})[g]||'100,100,100';
+}
+function gradeChipStyle(g) {
+  const rgb = gradeRgb(g);
+  return `background:rgba(${rgb},.15);color:${gradeColor(g)};border:1px solid rgba(${rgb},.35)`;
+}
+
+function classifyPerf(shots, view=state.calibrationView) {
+  const T = state.settings.performanceThresholds;
+  const bsVals    = shots.map(s=>getMetric(s,'ballSpeed',view)).filter(isFinite);
+  const carryVals = shots.map(s=>getMetric(s,'carry',view)).filter(isFinite);
+  const medBS    = median(bsVals);
+  const medCarry = median(carryVals);
+  // Carry floor: a shot below 50% of session median carry is a mishit (topped/duffed)
+  // and must be graded Miss regardless of offline — it never reached a playable distance.
+  const CARRY_FLOOR_PCT = 0.50;
+  return shots.map(shot => {
+    const absOff   = Math.abs(getMetric(shot,'offline',view)??0);
+    const absStart = Math.abs(getMetric(shot,'startDirection',view)??0);
+    const bs       = getMetric(shot,'ballSpeed',view);
+    const carry    = getMetric(shot,'carry',view);
+    const weakBall  = isFinite(bs)&&isFinite(medBS)    ? bs<medBS*state.settings.ballSpeedSoftFloorPct : false;
+    const shortCarry = isFinite(carry)&&isFinite(medCarry) ? carry<medCarry*CARRY_FLOOR_PCT : false;
+    let grade;
+    if      (absOff <= T.great)    grade = 'great';
+    else if (absOff <= T.stock)    grade = 'stock';
+    else if (absOff <= T.playable) grade = 'playable';
+    else                            grade = 'miss';
+    // Carry floor overrides everything — clearly a mishit
+    if (shortCarry) {
+      grade = 'miss';
+    } else if (weakBall && grade !== 'miss') {
+      // Weak ball speed downgrades by one level
+      if      (grade === 'great')    grade = 'stock';
+      else if (grade === 'stock')    grade = 'playable';
+      else if (grade === 'playable') grade = 'miss';
+    }
+    return {...shot, grade, absOff, absStart, medBS};
+  }).sort((a,b)=>a.index-b.index);
+}
+function classifyDir(shots) {
+  const {good,acceptable} = state.settings.directionalThresholds;
+  return shots.map(shot => {
+    const absStart = Math.abs(shot.startDirection??0);
+    let grade = 'miss';
+    if (absStart<=good) grade='good';
+    else if (absStart<=acceptable) grade='acceptable';
+    return {...shot, grade, absStart};
+  }).sort((a,b)=>a.index-b.index);
+}
+
+function computeStats(shots, club, view=state.calibrationView) {
+  const mode = clubMode(club);
+  const classified = mode==='performance' ? classifyPerf(shots, view) : classifyDir(shots);
+  const total = classified.length;
+  const byGrade = {};
+  classified.forEach(s => { byGrade[s.grade]=(byGrade[s.grade]||0)+1; });
+
+  const v = (key,abs=false) => classified.map(s=>{const x=getMetric(s,key,view); return isFinite(x)?(abs?Math.abs(x):x):null;}).filter(isFinite);
+  const carryMed   = median(v('carry'));
+  const totalMed   = median(v('total'));
+  const bsMed      = median(v('ballSpeed'));
+  const offMed     = median(v('offline'));
+  const absOffMed  = median(v('offline',true));
+  const startMed   = median(classified.map(s=>s.startDirection).filter(isFinite));
+  const startVals  = classified.map(s=>s.startDirection).filter(isFinite);
+  const startSpread= startVals.length ? Math.max(...startVals)-Math.min(...startVals) : null;
+  const pathMed    = median(classified.map(s=>s.clubPath).filter(isFinite));
+  const faceMed    = median(classified.map(s=>s.faceAngle).filter(isFinite));
+  const ftpMed     = median(classified.map(s=>faceToPath(s)).filter(isFinite));
+  const aaMed      = median(classified.map(s=>s.attackAngle).filter(isFinite));
+  const aaStd      = stddev(classified.map(s=>s.attackAngle).filter(isFinite));
+  const bsVals     = v('ballSpeed');
+  const bsSD       = stddev(bsVals);
+  const bsCV       = isFinite(bsSD)&&isFinite(bsMed)&&bsMed>0 ? (bsSD/bsMed)*100 : null;
+
+  const lpShots = classified.filter(s=>isFinite(s.attackAngle)&&isFinite(s.ballSpeed));
+  const medRawBS = median(lpShots.map(s=>s.ballSpeed).filter(isFinite));
+  const cleanShots = lpShots.filter(s=>s.ballSpeed>=medRawBS);
+  const aaWindow = cleanShots.map(s=>s.attackAngle).filter(isFinite);
+  const lpTarget = median(aaWindow);
+  const lpLow  = pct(aaWindow,.15);
+  const lpHigh = pct(aaWindow,.85);
+  const lpStability = isFinite(lpLow)&&isFinite(lpHigh) ? lpHigh-lpLow : null;
+  const inWindow = lpShots.filter(s=>isFinite(s.attackAngle)&&isFinite(lpLow)&&isFinite(lpHigh)&&s.attackAngle>=lpLow&&s.attackAngle<=lpHigh&&s.ballSpeed>=medRawBS).length;
+  const lpCleanPct = pctNum(inWindow, lpShots.length);
+  const lpShallowPct = pctNum(lpShots.filter(s=>isFinite(lpHigh)&&s.attackAngle>lpHigh).length, lpShots.length);
+  const lpSteepPct = pctNum(lpShots.filter(s=>isFinite(lpLow)&&s.attackAngle<lpLow).length, lpShots.length);
+
+  const goodShots = classified.filter(s=>['great','stock'].includes(s.grade));
+  const fpShots = goodShots.length>=3 ? goodShots : classified.filter(s=>['great','stock','playable'].includes(s.grade));
+  const fp = {
+    carryLo: pct(fpShots.map(s=>getMetric(s,'carry',view)).filter(isFinite),.25),
+    carryHi: pct(fpShots.map(s=>getMetric(s,'carry',view)).filter(isFinite),.75),
+    bsLo:    pct(fpShots.map(s=>getMetric(s,'ballSpeed',view)).filter(isFinite),.25),
+    bsHi:    pct(fpShots.map(s=>getMetric(s,'ballSpeed',view)).filter(isFinite),.75),
+    offHi:   pct(fpShots.map(s=>Math.abs(getMetric(s,'offline',view)??0)).filter(isFinite),.75),
+    startLo: pct(fpShots.map(s=>s.startDirection).filter(isFinite),.25),
+    startHi: pct(fpShots.map(s=>s.startDirection).filter(isFinite),.75),
+    pathLo:  pct(fpShots.map(s=>s.clubPath).filter(isFinite),.25),
+    pathHi:  pct(fpShots.map(s=>s.clubPath).filter(isFinite),.75),
+    faceLo:  pct(fpShots.map(s=>s.faceAngle).filter(isFinite),.25),
+    faceHi:  pct(fpShots.map(s=>s.faceAngle).filter(isFinite),.75),
+    ftpLo:   pct(fpShots.map(s=>faceToPath(s)).filter(isFinite),.25),
+    ftpHi:   pct(fpShots.map(s=>faceToPath(s)).filter(isFinite),.75),
+  };
+
+  const recipeShots = goodShots.length >= 3 ? goodShots : fpShots;
+  const recipe = {
+    count:    recipeShots.length,
+    carryMed: median(recipeShots.map(s=>getMetric(s,'carry',view)).filter(isFinite)),
+    bsMed:    median(recipeShots.map(s=>getMetric(s,'ballSpeed',view)).filter(isFinite)),
+    pathMed:  median(recipeShots.map(s=>s.clubPath).filter(isFinite)),
+    faceMed:  median(recipeShots.map(s=>s.faceAngle).filter(isFinite)),
+    ftpMed:   median(recipeShots.map(s=>faceToPath(s)).filter(isFinite)),
+    aaMed:    median(recipeShots.map(s=>s.attackAngle).filter(isFinite)),
+    startMed: median(recipeShots.map(s=>s.startDirection).filter(isFinite)),
+    pathStd:  stddev(recipeShots.map(s=>s.clubPath).filter(isFinite)),
+    faceStd:  stddev(recipeShots.map(s=>s.faceAngle).filter(isFinite)),
+    ftpStd:   stddev(recipeShots.map(s=>faceToPath(s)).filter(isFinite)),
+    aaStd:    stddev(recipeShots.map(s=>s.attackAngle).filter(isFinite)),
+  };
+
+  return {
+    club, mode, total, byGrade, shots: classified,
+    carryMed, totalMed, bsMed, offMed, absOffMed,
+    startMed, startSpread, pathMed, faceMed, ftpMed,
+    aaMed, aaStd, bsCV,
+    lp: { target:lpTarget, low:lpLow, high:lpHigh, stability:lpStability, cleanPct:lpCleanPct, shallowPct:lpShallowPct, steepPct:lpSteepPct, bsFloor:medRawBS, shots:lpShots.length },
+    fp, recipe
+  };
+}
+
+function sessionStats(session, club) {
+  const shots = session.shots.filter(s=>s.club===club);
+  return computeStats(shots, club, clubMode(club)==='performance'?state.calibrationView:'raw');
+}
+
+function allShotsForClub(club) {
+  const all = [];
+  state.sessions.forEach(s => s.shots.forEach(sh => { if(sh.club===club) all.push({...sh,sessionId:s.id,sessionDate:s.date}); }));
+  return all;
+}
+
+function parseNum(v) { const n=parseFloat(v); return isFinite(n)?n:null; }
+function parseDir(s) {
+  if(s==null||s==='') return null;
+  const t=String(s).trim();
+  if(/^[LR]/i.test(t)) { const d=t[0].toUpperCase()==='R'?1:-1; const n=parseFloat(t.slice(1)); return isFinite(n)?d*n:null; }
+  const n=parseFloat(t); return isFinite(n)?n:null;
+}
+function parseCsv(text, fileName='') {
+  const lines = text.replace(/\r/g,'').split('\n');
+  const metaLine = lines[0]||'';
+  const hi = lines.findIndex(l=>/^Club,Index,/i.test(l));
+  if(hi<0) throw new Error('Could not find Square Golf header row.');
+  const header = lines[hi].split(',').map(h=>h.trim());
+  const shots = lines.slice(hi+1).filter(Boolean).map(line=>{
+    const cols = line.split(',');
+    if(!cols[0]) return null;
+    const b = Object.fromEntries(header.map((h,i)=>[h,cols[i]??'']));
+    const s = {
+      club: normaliseClub(b['Club']),
+      index: Number(b['Index']),
+      ballSpeed: parseNum(b['Ball Speed(mph)']),
+      startDirection: parseDir(b['Launch Direction']),
+      launchAngle: parseNum(b['Launch Angle']),
+      spinRate: parseNum(b['Spin Rate']),
+      spinAxis: parseNum(b['Spin Axis']),
+      backSpin: parseNum(b['Back Spin']),
+      sideSpin: parseNum(b['Side Spin']),
+      apex: parseNum(b['Apex(yd)']),
+      carry: parseNum(b['Carry(yd)']),
+      total: parseNum(b['Total(yd)']),
+      offline: parseDir(b['Offline(yd)']),
+      landingAngle: parseNum(b['Landing Angle']),
+      clubPath: parseDir(b['Club Path']),
+      faceAngle: parseDir(b['Face Angle']),
+      attackAngle: parseNum(b['Attack Angle']),
+      dynamicLoft: parseNum(b[' Dynamic Loft']??b['Dynamic Loft'])
+    };
+    return s.club ? s : null;
+  }).filter(Boolean);
+  const dateMatch = `${metaLine} ${fileName}`.match(/(\d{2})-(\d{2})-(\d{4})/);
+  const date = dateMatch ? `${dateMatch[3]}-${dateMatch[1]}-${dateMatch[2]}` : new Date().toISOString().slice(0,10);
+  const locMatch = metaLine.match(/Place,([^,]+)/i);
+  const name = locMatch ? locMatch[1].trim() : 'Indoor session';
+  return { id:`s_${Date.now()}_${Math.random().toString(36).slice(2,6)}`, date, name, importedAt:new Date().toISOString(), fileName, clubsUsed:[...new Set(shots.map(s=>s.club))], shots };
+}
+
+function fmtDate(d) {
+  if(!d) return '—';
+  const [y,m,dd]=d.split('-');
+  return new Date(+y,+m-1,+dd).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+function esc(s='') { return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]); }
+function gradeChip(g) { return `<span class="grade-chip ${gradeCssClass(g)}">${gradeLabel(g)}</span>`; }
+function gradeDot(g) { return `<span class="gdot" style="background:${gradeColor(g)}"></span>`; }
+
+const BUNDLES = [
+  { key:'all',    label:'All time',   months: null },
+  { key:'1m',     label:'1 month',    months: 1    },
+  { key:'2m',     label:'2 months',   months: 2    },
+  { key:'3m',     label:'3 months',   months: 3    },
+  { key:'6m',     label:'6 months',   months: 6    },
+  { key:'1y',     label:'1 year',     months: 12   }
+];
+function sessionsForBundle(bundleKey) {
+  const b = BUNDLES.find(x=>x.key===bundleKey) || BUNDLES[0];
+  if (!b.months) return [...state.sessions];
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - b.months);
+  return state.sessions.filter(s => new Date(s.date) >= cutoff);
+}
+function shotsForBundleAndClub(bundleKey, club) {
+  const sessions = sessionsForBundle(bundleKey);
+  const all = [];
+  sessions.forEach(s => s.shots.forEach(sh => { if(sh.club===club) all.push({...sh,sessionId:s.id,sessionDate:s.date}); }));
+  return all;
+}
+function totalShotsInBundle(bundleKey) {
+  return sessionsForBundle(bundleKey).reduce((n,s)=>n+s.shots.length,0);
+}
+
+function render() {
+  renderGlobalToggle();
+  renderNav();
+  renderStrip();
+  renderSessions();
+  renderFingerprint();
+  renderProgress();
+  renderSettings();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${currentTab}`));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
+  document.getElementById('stripWrap').style.display = currentTab==='settings' ? 'none' : '';
+  saveState();
+}
+
+function renderGlobalToggle() {
+  const el = document.getElementById('globalToggle');
+  el.innerHTML = `
+    <button class="gt-btn ${state.calibrationView==='raw'?'active':''}" data-view="raw">Raw</button>
+    <button class="gt-btn ${state.calibrationView==='calibrated'?'active':''}" data-view="calibrated">On course</button>`;
+  el.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{state.calibrationView=b.dataset.view;render();});
+}
+
+function renderStrip() {
+  const strip = document.getElementById('stripScroll');
+  const sessions = [...state.sessions].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if (currentTab === 'sessions') {
+    if (!sessions.length) {
+      strip.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:6px 2px;">No sessions yet — import a CSV to get started.</div>`;
+      return;
+    }
+    strip.innerHTML = sessions.map(s => {
+      const d = new Date(s.date+'T00:00:00');
+      const label = d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      const active = s.id === state.selectedSessionId;
+      return `<button class="strip-pill ${active?'active':''}" data-strip-sid="${s.id}">
+        <span class="sp-top">${esc(label)}</span>
+        <span class="sp-bot">${s.shots.length} shots</span>
+      </button>`;
+    }).join('');
+    strip.querySelectorAll('[data-strip-sid]').forEach(b => b.onclick = () => {
+      state.selectedSessionId = b.dataset.stripSid;
+      state.selectedGradeFilter = 'all';
+      render();
+      setTimeout(()=>b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}), 50);
+    });
+    setTimeout(()=>{
+      const active = strip.querySelector('.strip-pill.active');
+      if(active) active.scrollIntoView({behavior:'instant',block:'nearest',inline:'center'});
+    }, 0);
+  } else {
+    const bundle = state.selectedBundle || 'all';
+    strip.innerHTML = BUNDLES.map(b => {
+      const count = totalShotsInBundle(b.key);
+      const active = b.key === bundle;
+      return `<button class="strip-pill bundle ${active?'active':''}" data-strip-bundle="${b.key}">
+        <span class="sp-top">${esc(b.label)}</span>
+        <span class="sp-bot">${count} shots</span>
+      </button>`;
+    }).join('');
+    strip.querySelectorAll('[data-strip-bundle]').forEach(b => b.onclick = () => {
+      state.selectedBundle = b.dataset.stripBundle;
+      render();
+    });
+  }
+}
+
+function renderNav() {
+  document.getElementById('bottomNav').innerHTML = APP.TABS.map(t=>`
+    <button class="nav-btn ${t.key===currentTab?'active':''}" data-tab="${t.key}">
+      <span class="nav-icon">${t.icon}</span>${t.label}
+    </button>`).join('');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.onclick=()=>{currentTab=b.dataset.tab;render();});
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SESSIONS SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function renderSessions() {
+  const root = document.getElementById('screen-sessions');
+  const sessions = [...state.sessions].sort((a,b)=>new Date(b.date)-new Date(a.date)||(b.importedAt||'').localeCompare(a.importedAt||''));
+  const sel = sessions.find(s=>s.id===state.selectedSessionId)||sessions[0]||null;
+  if(sel&&state.selectedSessionId!==sel.id) state.selectedSessionId=sel.id;
+  if (!sessions.length) {
+    root.innerHTML = `<div class="empty" style="margin-top:8px;">No sessions yet. Use the ⊕ button above to import your first Square Golf CSV.</div>`;
+    return;
+  }
+  root.innerHTML = sel ? renderSessionDetail(sel) : '';
+}
+
+function renderSessionDetail(session) {
+  const clubs = session.clubsUsed.slice().sort((a,b)=>sortClub(a)-sortClub(b));
+  const selClub = state.selectedClubByScreen.sessions && clubs.includes(state.selectedClubByScreen.sessions)
+    ? state.selectedClubByScreen.sessions : clubs[0];
+  state.selectedClubByScreen.sessions = selClub;
+  const stats = sessionStats(session, selClub);
+  return `
+    <div class="sec-head" style="margin-top:16px;"><div class="sh-title">Session Detail</div></div>
+    <div class="card">
+      <div class="row" style="align-items:flex-start;">
+        <div>
+          <div class="t-label">${esc(session.name)}</div>
+          <div style="font-family:var(--head);font-weight:700;font-size:22px;letter-spacing:-.02em;margin-top:3px;">${fmtDate(session.date)}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right;">${session.shots.length} shots<br/>${clubs.length} clubs</div>
+      </div>
+      <div class="divider"></div>
+      <div class="club-tabs">
+        ${clubs.map(c=>`<button class="club-tab ${c===selClub?'active':''}" data-sclub="${c}">${c}</button>`).join('')}
+      </div>
+    </div>
+    ${renderSessionClubStats(stats, session.id)}
+    ${renderDispersionPlot(stats, session.id)}
+    ${renderShotTable(stats, session.id)}
+  `;
+}
+
+function renderSessionClubStats(stats, sessionId) {
+  const view = stats.mode==='performance' ? state.calibrationView : 'raw';
+  const gradeFilter = state.selectedGradeFilter || 'all';
+  if (stats.mode==='performance') {
+    const filteredShots = gradeFilter === 'all' ? stats.shots : stats.shots.filter(s => s.grade === gradeFilter);
+    const fCarry   = median(filteredShots.map(s=>getMetric(s,'carry',view)).filter(isFinite));
+    const fBS      = median(filteredShots.map(s=>getMetric(s,'ballSpeed',view)).filter(isFinite));
+    const fAbsOff  = median(filteredShots.map(s=>Math.abs(getMetric(s,'offline',view)??0)).filter(isFinite));
+    const fStart   = median(filteredShots.map(s=>s.startDirection).filter(isFinite));
+    const fStartVals = filteredShots.map(s=>s.startDirection).filter(isFinite);
+    const fSpread  = fStartVals.length ? Math.max(...fStartVals)-Math.min(...fStartVals) : null;
+    const fAA      = median(filteredShots.map(s=>s.attackAngle).filter(isFinite));
+    const fPath    = median(filteredShots.map(s=>s.clubPath).filter(isFinite));
+    const fFace    = median(filteredShots.map(s=>s.faceAngle).filter(isFinite));
+    const fCount   = filteredShots.length;
+    const gradeFilterBtns = `
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">
+        ${['all',...GRADE_ORDER].map(g => {
+          const isActive = gradeFilter === g;
+          const count = g==='all' ? stats.total : (stats.byGrade[g]||0);
+          const col = g==='all' ? 'var(--accent)' : gradeColor(g);
+          const bg = isActive ? (g==='all' ? 'rgba(61,126,255,.15)' : `rgba(${gradeRgb(g)},.15)`) : 'var(--surface2)';
+          const border = isActive ? (g==='all' ? 'var(--accent)' : col) : 'var(--border)';
+          return `<button style="font-family:var(--mono);font-size:10px;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid ${border};background:${bg};color:${isActive?col:'var(--muted)'};cursor:pointer;text-transform:uppercase;letter-spacing:.04em;" data-grade-filter="${g}">${g==='all'?'All '+stats.total:gradeLabel(g)+' '+count}</button>`;
+        }).join('')}
+      </div>`;
+    return `<div class="card" id="session-medians-card">
+      <div class="t-label" style="margin-bottom:10px;">Session medians · ${stats.club} · ${stats.total} shots${gradeFilter!=='all'?' · '+gradeLabel(gradeFilter)+' only':''}</div>
+      ${gradeFilterBtns}
+      ${fCount === 0
+        ? `<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:8px 0;">No ${gradeLabel(gradeFilter)} shots in this session.</div>`
+        : `<div class="g3" style="gap:7px;">
+          ${mtile('Median carry', fmt(fCarry,0)+' yd')}
+          ${mtile('Ball speed', fmt(fBS,1)+' mph')}
+          ${mtile('Abs offline', fmt(fAbsOff,1)+' yd')}
+          ${mtile('Start dir', fmtDir(fStart,1))}
+          ${mtile('Start spread', fmt(fSpread,1)+'°')}
+          ${mtile('Attack angle', isFinite(fAA)?fmt(fAA,1)+'°':'—')}
+        </div>
+        <div class="g2" style="gap:7px;margin-top:7px;">
+          ${mtile('Swing path', isFinite(fPath)?fmt(fPath,1)+'°':'—', fPath>0.3?'In-to-out':fPath<-0.3?'Out-to-in':'Neutral')}
+          ${mtile('Face angle', isFinite(fFace)?fmt(fFace,1)+'°':'—', fFace>0.3?'Open':fFace<-0.3?'Closed':'Square')}
+        </div>`
+      }
+    </div>`;
+  } else {
+    return `<div class="card">
+      <div class="t-label" style="margin-bottom:10px;">Session medians · ${stats.club} · directional · ${stats.total} shots</div>
+      <div class="g3">
+        ${mtile('Median start', fmtDir(stats.startMed,1))}
+        ${mtile('Start spread', fmt(stats.startSpread,1)+'°')}
+        ${mtile('Ball speed', fmt(stats.bsMed,1)+' mph')}
+        ${mtile('Good reps', pctStr(stats.byGrade.good||0,stats.total))}
+        ${mtile('Acceptable', pctStr(stats.byGrade.acceptable||0,stats.total))}
+        ${mtile('Swing path', isFinite(stats.pathMed)?fmt(stats.pathMed,1)+'°':'—')}
+      </div>
+    </div>`;
+  }
+}
+
+function mtile(label, value, sub='') {
+  return `<div class="mtile"><div class="ml">${esc(label)}</div><div class="mv">${esc(String(value))}</div>${sub?`<div class="ms">${esc(sub)}</div>`:''}</div>`;
+}
+
+function renderShotTable(stats, sessionId) {
+  const shots = stats.shots;
+  if(!shots.length) return '';
+  const isPerf = stats.mode==='performance';
+  const view = isPerf ? state.calibrationView : 'raw';
+  return `
+    <div class="card">
+      <div class="t-label" style="margin-bottom:10px;">Shot log · ${stats.club}</div>
+      <div style="overflow-x:auto;">
+        <table class="shot-table">
+          <thead><tr>
+            <th>#</th>
+            ${isPerf?`<th>Carry</th><th>Ball spd</th><th>Offline</th>`:`<th>Start</th><th>Ball spd</th>`}
+            <th>Grade</th>
+          </tr></thead>
+          <tbody>
+            ${shots.map(s=>`
+              <tr data-shot-open="1" data-sid="${sessionId}" data-club="${stats.club}" data-idx="${s.index}">
+                <td style="font-family:var(--mono);color:var(--muted);">${s.index+1}</td>
+                ${isPerf?`
+                  <td style="font-family:var(--mono);">${fmt(getMetric(s,'carry',view),0)} yd</td>
+                  <td style="font-family:var(--mono);">${fmt(getMetric(s,'ballSpeed',view),1)}</td>
+                  <td style="font-family:var(--mono);">${fmtDir(s.offline,1).replace('°',' yd')}</td>
+                `:`
+                  <td style="font-family:var(--mono);">${fmtDir(s.startDirection,1)}</td>
+                  <td style="font-family:var(--mono);">${fmt(s.ballSpeed,1)}</td>
+                `}
+                <td>${gradeChip(s.grade)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── Dispersion plot ───────────────────────────────────────────────────────────
+const _dispState = {};
+
+function renderDispersionPlot(stats, sessionId) {
+  if (stats.mode === 'directional') return renderStartDirPlot(stats, sessionId);
+  const shots = stats.shots;
+  if (!shots.length) return '';
+
+  const view = state.calibrationView;
+  const carries  = shots.map(s => getMetric(s,'carry',view)).filter(isFinite);
+  const offlines = shots.map(s => getMetric(s,'offline',view)).filter(isFinite);
+  if (!carries.length) return '';
+
+  const stateKey = `${sessionId}_${stats.club}`;
+  if (!_dispState[stateKey]) _dispState[stateKey] = { selectedIdx: null, gradeFilter: 'all' };
+
+  const sessionMed = {
+    carry:  median(shots.map(s => getMetric(s,'carry',view)).filter(isFinite)),
+    bs:     median(shots.map(s => getMetric(s,'ballSpeed',view)).filter(isFinite)),
+    offline:median(shots.map(s => getMetric(s,'offline',view)).filter(isFinite)),
+    total:  median(shots.map(s => getMetric(s,'total',view)).filter(isFinite)),
+    path:   median(shots.map(s => s.clubPath).filter(isFinite)),
+    face:   median(shots.map(s => s.faceAngle).filter(isFinite)),
+    start:  median(shots.map(s => s.startDirection).filter(isFinite)),
+    aa:     median(shots.map(s => s.attackAngle).filter(isFinite)),
+  };
+
+  const GC = { great:'#27c97a', stock:'#3d7eff', playable:'#e8a020', miss:'#f05a35' };
+
+  const gradeFilterBtns = ['all',...GRADE_ORDER].map(g => {
+    const count = g === 'all' ? shots.length : (stats.byGrade[g]||0);
+    return `<button class="gpill-disp" data-dispgf="${g}" data-dispkey="${stateKey}"
+      style="font-family:var(--mono);font-size:9px;padding:4px 10px;border-radius:4px;cursor:pointer;letter-spacing:.04em;text-transform:uppercase;transition:all .15s;white-space:nowrap;flex:0 0 auto;">
+      ${g==='all'?'All '+count:gradeLabel(g)+' '+count}
+    </button>`;
+  }).join('');
+
+  const safeKey = stateKey.replace(/[^a-z0-9]/gi,'_');
+  const svgId   = `disp-svg-${safeKey}`;
+
+  const html = `
+    <div class="card" style="padding:16px 16px 8px;">
+      <div class="t-label" style="margin-bottom:8px;white-space:nowrap;">DISPERSION MAP • ${stats.club}</div>
+      <div style="display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;margin-bottom:10px;">${gradeFilterBtns}</div>
+      <div class="disp-svg-wrap">
+        <svg id="${svgId}"></svg>
+      </div>
+      <div class="disp-stats" id="disp-stats-${safeKey}">
+        <div class="disp-stats-mode">
+          <div class="disp-stats-label" id="disp-mode-label-${safeKey}">Session medians</div>
+          <span class="disp-grade-chip" id="disp-grade-chip-${safeKey}" style="display:none;"></span>
+        </div>
+        <div class="disp-stats-row">
+          <div class="disp-stat-cell"><div class="dsl">Carry</div><div class="dsv" id="dsv-carry-${safeKey}">—</div></div>
+          <div class="disp-stat-cell"><div class="dsl">Ball spd</div><div class="dsv" id="dsv-bs-${safeKey}">—</div></div>
+          <div class="disp-stat-cell"><div class="dsl">Offline</div><div class="dsv" id="dsv-offline-${safeKey}">—</div></div>
+          <div class="disp-stat-cell"><div class="dsl">Total</div><div class="dsv" id="dsv-total-${safeKey}">—</div></div>
+        </div>
+        <div class="disp-stats-row">
+          <div class="disp-stat-cell"><div class="dsl">Path</div><div class="dsv" id="dsv-path-${safeKey}">—</div></div>
+          <div class="disp-stat-cell"><div class="dsl">Face</div><div class="dsv" id="dsv-face-${safeKey}">—</div></div>
+          <div class="disp-stat-cell"><div class="dsl">Start dir</div><div class="dsv" id="dsv-start-${safeKey}">—</div></div>
+          <div class="disp-stat-cell"><div class="dsl">Att angle</div><div class="dsv" id="dsv-aa-${safeKey}">—</div></div>
+        </div>
+      </div>
+      <div class="disp-legend-centered">
+        ${GRADE_ORDER.map(g=>`<span style="display:flex;align-items:center;gap:5px;">${gradeDot(g)} ${gradeLabel(g)}</span>`).join('')}
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:20px;height:8px;border:1.5px dashed rgba(61,126,255,.55);border-radius:4px;display:inline-block;"></span>IQR</span>
+      </div>
+    </div>`;
+
+  setTimeout(() => {
+    const svgEl = document.getElementById(svgId);
+    if (!svgEl) return;
+
+    const mk = (tag, attrs) => {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.entries(attrs||{}).forEach(([k,v]) => el.setAttribute(k, String(v)));
+      return el;
+    };
+
+    const setCell = (id, value, isDim=false) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = value;
+      el.className = 'dsv' + (isDim ? ' dim' : '');
+    };
+
+    const updateStats = (shot) => {
+      const modeLabel   = document.getElementById(`disp-mode-label-${safeKey}`);
+      const gradeChipEl = document.getElementById(`disp-grade-chip-${safeKey}`);
+      if (!modeLabel) return;
+      if (!shot) {
+        modeLabel.textContent = 'Session medians';
+        modeLabel.style.color = 'var(--text2)';
+        if (gradeChipEl) gradeChipEl.style.display = 'none';
+        setCell(`dsv-carry-${safeKey}`,   isFinite(sessionMed.carry)   ? fmt(sessionMed.carry,0)+' yd'   : '—', !isFinite(sessionMed.carry));
+        setCell(`dsv-bs-${safeKey}`,      isFinite(sessionMed.bs)      ? fmt(sessionMed.bs,1)+' mph'     : '—', !isFinite(sessionMed.bs));
+        setCell(`dsv-offline-${safeKey}`, isFinite(sessionMed.offline) ? fmtOff(sessionMed.offline,1)    : '—', !isFinite(sessionMed.offline));
+        setCell(`dsv-total-${safeKey}`,   isFinite(sessionMed.total)   ? fmt(sessionMed.total,0)+' yd'   : '—', !isFinite(sessionMed.total));
+        setCell(`dsv-path-${safeKey}`,    isFinite(sessionMed.path)    ? fmt(sessionMed.path,1)+'°'      : '—', !isFinite(sessionMed.path));
+        setCell(`dsv-face-${safeKey}`,    isFinite(sessionMed.face)    ? fmt(sessionMed.face,1)+'°'      : '—', !isFinite(sessionMed.face));
+        setCell(`dsv-start-${safeKey}`,   isFinite(sessionMed.start)   ? fmtDir(sessionMed.start,1)      : '—', !isFinite(sessionMed.start));
+        setCell(`dsv-aa-${safeKey}`,      isFinite(sessionMed.aa)      ? fmt(sessionMed.aa,1)+'°'        : '—', !isFinite(sessionMed.aa));
+      } else {
+        const gl = gradeLabel(shot.grade);
+        modeLabel.textContent = `Shot ${shot.index + 1}`;
+        modeLabel.style.color = 'var(--text)';
+        if (gradeChipEl) {
+          gradeChipEl.style.cssText = gradeChipStyle(shot.grade);
+          gradeChipEl.style.display = '';
+          gradeChipEl.textContent = gl;
+        }
+        const sv = getMetric(shot, 'ballSpeed', view);
+        const sc = getMetric(shot, 'carry', view);
+        const st = getMetric(shot, 'total', view);
+        setCell(`dsv-carry-${safeKey}`,   isFinite(sc) ? fmt(sc,0)+' yd' : '—',   !isFinite(sc));
+        setCell(`dsv-bs-${safeKey}`,      isFinite(sv) ? fmt(sv,1)+' mph' : '—',   !isFinite(sv));
+        setCell(`dsv-offline-${safeKey}`, isFinite(shot.offline) ? fmtOff(shot.offline,1) : '—', !isFinite(shot.offline));
+        setCell(`dsv-total-${safeKey}`,   isFinite(st) ? fmt(st,0)+' yd' : '—',   !isFinite(st));
+        setCell(`dsv-path-${safeKey}`,    isFinite(shot.clubPath)    ? fmt(shot.clubPath,1)+'°'    : '—', !isFinite(shot.clubPath));
+        setCell(`dsv-face-${safeKey}`,    isFinite(shot.faceAngle)   ? fmt(shot.faceAngle,1)+'°'   : '—', !isFinite(shot.faceAngle));
+        setCell(`dsv-start-${safeKey}`,   isFinite(shot.startDirection) ? fmtDir(shot.startDirection,1) : '—', !isFinite(shot.startDirection));
+        setCell(`dsv-aa-${safeKey}`,      isFinite(shot.attackAngle) ? fmt(shot.attackAngle,1)+'°' : '—', !isFinite(shot.attackAngle));
+      }
+    };
+
+    const drawDisp = () => {
+      while (svgEl.firstChild) svgEl.removeChild(svgEl.firstChild);
+
+      const dState = _dispState[stateKey];
+      const gf = dState.gradeFilter;
+
+      // ── Axis range ──────────────────────────────────────────────────────
+      // X: symmetric, rounded to nearest 5 yd so 0 always lands on a grid upright
+      const allCarries  = shots.map(s => getMetric(s,'carry',view)).filter(isFinite);
+      const allOfflines = shots.map(s => getMetric(s,'offline',view)).filter(isFinite);
+      const offAbsRaw   = Math.max(14, Math.ceil(Math.max(...allOfflines.map(Math.abs)) + 4));
+      const offAbs      = Math.ceil(offAbsRaw / 5) * 5;
+
+      // Y: 0 at bottom; top = cluster max rounded up to nearest 10, + 10 yd breathing room
+      const carMin      = 0;
+      const carMaxRaw   = Math.max(...allCarries);
+      const carMax      = Math.ceil(carMaxRaw / 10) * 10 + 10;
+
+      // ── SVG coordinate system ────────────────────────────────────────────
+      // Width fixed at 660 (viewBox units).
+      // Height derived from the Y range so each 10 yd interval is exactly
+      // STEP_PX tall — this is what controls grid line spacing.
+      // PAD_TOP: margin above the top grid line.
+      // PAD_BOT: margin below the bottom grid line — larger to fit axis number
+      //          labels (~13 units) and the "OFFLINE (YD)" label with breathing room.
+      const STEP_PX  = 44;   // viewBox units per 10 yd interval
+      const PAD_TOP  = 28;   // margin above top grid line
+      const PAD_BOT  = 44;   // margin below bottom grid line (numbers + axis label + space)
+      const pL = 52, pR = 34;
+      const W  = 660;
+      const yIntervals = carMax / 10;
+      const plotH      = yIntervals * STEP_PX;
+      const H          = plotH + PAD_TOP + PAD_BOT;
+
+      svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      // width:100% in CSS + viewBox aspect ratio drives rendered height — no explicit px height needed
+
+      const xs = v => pL + ((v + offAbs) / (offAbs * 2)) * (W - pL - pR);
+      const ys = v => PAD_TOP + plotH * (1 - v / carMax);
+
+      // Background
+      svgEl.appendChild(mk('rect', { x:0, y:0, width:W, height:H, fill:'#04060e' }));
+
+      // Carry grid (Y) — label every 10 yd, minor tick every 5 yd
+      for (let c = 0; c <= carMax; c += 5) {
+        const ly = ys(c);
+        if (ly < PAD_TOP - 1 || ly > H - PAD_BOT + 1) continue;
+        const isMajor = c % 10 === 0;
+        svgEl.appendChild(mk('line', {
+          x1: pL, y1: ly, x2: W - pR, y2: ly,
+          stroke: isMajor ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.055)',
+          'stroke-width': '1'
+        }));
+        if (isMajor) {
+          const t = mk('text', { x: pL-6, y: ly+3.5, fill:'rgba(255,255,255,.38)', 'font-size':'10', 'text-anchor':'end', 'font-family':'Inter,sans-serif' });
+          t.textContent = c;
+          svgEl.appendChild(t);
+        }
+      }
+
+      // Offline grid (X) — 5 yd intervals, 0 always a labelled upright
+      for (let o = -offAbs; o <= offAbs; o += 5) {
+        const lx = xs(o);
+        const isTarget = o === 0;
+        const isMajor  = o % 10 === 0;
+        const vLine = mk('line', {
+          x1: lx, y1: PAD_TOP, x2: lx, y2: H - PAD_BOT,
+          stroke: isTarget ? 'rgba(61,126,255,.42)' : isMajor ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.055)',
+          'stroke-width': '1'
+        });
+        if (isTarget) vLine.setAttribute('stroke-dasharray', '4 5');
+        svgEl.appendChild(vLine);
+        if (isMajor || isTarget) {
+          const t = mk('text', { x: lx, y: H - PAD_BOT + 14, fill: isTarget?'rgba(61,126,255,.62)':'rgba(255,255,255,.36)', 'font-size':'10', 'text-anchor':'middle', 'font-family':'Inter,sans-serif' });
+          t.textContent = o===0?'0':o>0?`R${o}`:`L${Math.abs(o)}`;
+          svgEl.appendChild(t);
+        }
+      }
+
+      // Axis label — sits below the number labels with comfortable spacing
+      const xLbl = mk('text', { x: W/2, y: H - 8, fill:'rgba(255,255,255,.28)', 'font-size':'9', 'text-anchor':'middle', 'font-family':'Inter,sans-serif' });
+      xLbl.textContent = 'OFFLINE (YD)'; svgEl.appendChild(xLbl);
+
+      // Ellipses (great + stock shots)
+      const goodShots = shots.filter(s => ['great','stock'].includes(s.grade));
+      const gOff = goodShots.map(s => getMetric(s,'offline',view)).filter(isFinite);
+      const gCar = goodShots.map(s => getMetric(s,'carry',view)).filter(isFinite);
+      if (goodShots.length >= 3) {
+        const ellipse = (oLo,oHi,cLo,cHi,fill,stroke,sw,dash='') => {
+          if (![oLo,oHi,cLo,cHi].every(isFinite)) return;
+          const cx = xs((oLo+oHi)/2), cy = ys((cLo+cHi)/2);
+          const rx = Math.max(4, (xs(oHi)-xs(oLo))/2);
+          const ry = Math.max(4, (ys(cLo)-ys(cHi))/2);
+          const el = mk('ellipse', {cx,cy,rx,ry,fill,stroke,'stroke-width':sw});
+          if (dash) el.setAttribute('stroke-dasharray', dash);
+          svgEl.appendChild(el);
+        };
+        ellipse(pct(gOff,.1),pct(gOff,.9),pct(gCar,.1),pct(gCar,.9),'rgba(61,126,255,.05)','rgba(61,126,255,.18)',1);
+        ellipse(pct(gOff,.25),pct(gOff,.75),pct(gCar,.25),pct(gCar,.75),'rgba(61,126,255,.1)','rgba(61,126,255,.55)',1.5,'5 3');
+      }
+
+      // Shot dots
+      const drawOrder = [...shots].sort((a,b) =>
+        (a.index === dState.selectedIdx ? 1 : -1) - (b.index === dState.selectedIdx ? 1 : -1)
+      );
+      drawOrder.forEach(s => {
+        const offV = getMetric(s,'offline',view);
+        const carV = getMetric(s,'carry',view);
+        if (!isFinite(offV) || !isFinite(carV)) return;
+        const isSelected = s.index === dState.selectedIdx;
+        const isDimmed   = gf !== 'all' && s.grade !== gf;
+        const cx = xs(offV), cy = ys(carV);
+        const r  = isSelected ? 9 : 7;
+        if (isSelected) {
+          svgEl.appendChild(mk('circle', { cx, cy, r:14, fill:'none', stroke:GC[s.grade], 'stroke-width':'2', opacity:'.3' }));
+        }
+        const dot = mk('circle', { cx, cy, r, fill:GC[s.grade], 'fill-opacity':isDimmed?'.18':'.92', stroke:isSelected?'#fff':'#04060e', 'stroke-width':isSelected?'2':'1.5', style:'cursor:pointer', 'data-disp-idx':s.index, 'data-disp-key':stateKey });
+        svgEl.appendChild(dot);
+        if (isSelected) {
+          const t = mk('text', { x:cx, y:cy+3.5, fill:'#fff', 'font-size':'9', 'font-weight':'600', 'text-anchor':'middle', 'font-family':'Inter,sans-serif', style:'pointer-events:none' });
+          t.textContent = s.index + 1;
+          svgEl.appendChild(t);
+        }
+      });
+
+      // Median marker
+      const medOff = median(allOfflines);
+      const medCar = median(allCarries);
+      if (isFinite(medOff) && isFinite(medCar)) {
+        svgEl.appendChild(mk('circle', { cx:xs(medOff), cy:ys(medCar), r:9, fill:'none', stroke:'#e8eaf2', 'stroke-width':'1.5', opacity:'.5' }));
+        svgEl.appendChild(mk('circle', { cx:xs(medOff), cy:ys(medCar), r:3, fill:'#e8eaf2', opacity:'.85' }));
+      }
+
+      // Grade pill styles
+      document.querySelectorAll(`.gpill-disp[data-dispkey="${stateKey}"]`).forEach(btn => {
+        const g = btn.dataset.dispgf;
+        const isActive = g === dState.gradeFilter;
+        const col = g === 'all' ? 'var(--accent)' : gradeColor(g);
+        btn.style.background = isActive ? (g==='all'?'rgba(61,126,255,.15)':`rgba(${gradeRgb(g)},.15)`) : 'var(--surface2)';
+        btn.style.border = `1px solid ${isActive ? col : 'var(--border)'}`;
+        btn.style.color = isActive ? col : 'var(--muted)';
+      });
+    };
+
+    drawDisp();
+    updateStats(null);
+
+    svgEl.onclick = e => {
+      const dotEl = e.target.closest('[data-disp-idx]');
+      const dState = _dispState[stateKey];
+      if (!dotEl || dotEl.dataset.dispKey !== stateKey) {
+        dState.selectedIdx = null; updateStats(null); drawDisp(); return;
+      }
+      const idx = Number(dotEl.dataset.dispIdx);
+      dState.selectedIdx = dState.selectedIdx === idx ? null : idx;
+      const shot = dState.selectedIdx === null ? null : shots.find(s => s.index === dState.selectedIdx);
+      updateStats(shot);
+      drawDisp();
+    };
+
+    document.querySelectorAll(`.gpill-disp[data-dispkey="${stateKey}"]`).forEach(btn => {
+      btn.onclick = () => {
+        _dispState[stateKey].gradeFilter = btn.dataset.dispgf;
+        _dispState[stateKey].selectedIdx = null;
+        updateStats(null);
+        drawDisp();
+      };
+    });
+  }, 0);
+
+  return html;
+}
+
+function renderStartDirPlot(stats, sessionId) {
+  const shots = stats.shots;
+  if(!shots.length) return '';
+  const W=580,H=140,pad=32;
+  const xMax=Math.max(5,Math.ceil(Math.max(...shots.map(s=>Math.abs(s.startDirection||0)))+1));
+  const xs=v=>pad+((v+xMax)/(xMax*2))*(W-pad*2);
+  const {good,acceptable}=state.settings.directionalThresholds;
+  return `<div class="card" style="padding:14px;">
+    <div class="t-label" style="margin-bottom:12px;">${stats.club} · Start direction</div>
+    <div class="plot-wrap">
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;">
+        <rect width="${W}" height="${H}" fill="#060810"/>
+        <rect x="${xs(-acceptable)}" y="30" width="${xs(acceptable)-xs(-acceptable)}" height="70" fill="rgba(232,160,32,.07)"/>
+        <rect x="${xs(-good)}" y="30" width="${xs(good)-xs(-good)}" height="70" fill="rgba(39,201,122,.09)"/>
+        <line x1="${xs(0)}" y1="20" x2="${xs(0)}" y2="110" stroke="#2a3550" stroke-dasharray="4 3" stroke-width="1"/>
+        ${shots.map((s,i)=>{
+          const hex={good:'#27c97a',acceptable:'#e8a020',miss:'#f05a35'}[s.grade]||'#555';
+          return `<circle cx="${xs(s.startDirection||0)}" cy="${65+((i%5)-2)*9}" r="5.5" fill="${hex}" fill-opacity=".9" stroke="#060810" stroke-width="1.5" data-shot-open="1" data-sid="${sessionId}" data-club="${stats.club}" data-idx="${s.index}" style="cursor:pointer"/>`;
+        }).join('')}
+        <text x="${xs(-xMax)}" y="${H-6}" fill="#4a5468" font-size="9">L${xMax}°</text>
+        <text x="${xs(xMax)}" y="${H-6}" fill="#4a5468" font-size="9" text-anchor="end">R${xMax}°</text>
+        <text x="${xs(0)+5}" y="18" fill="#4a5468" font-size="9">target</text>
+      </svg>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FINGERPRINT / MY GAME SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function renderFingerprint() {
+  const root = document.getElementById('screen-fingerprint');
+  const bundle = state.selectedBundle || 'all';
+  const bundleSessions = sessionsForBundle(bundle);
+  const allClubs = [...new Set(bundleSessions.flatMap(s=>s.clubsUsed))].sort((a,b)=>sortClub(a)-sortClub(b));
+  if(!allClubs.length) {
+    root.innerHTML=`<div class="card"><div class="empty">No sessions in this window.</div></div>`;
+    return;
+  }
+  const selClub = allClubs.includes(state.selectedClubByScreen.fingerprint) ? state.selectedClubByScreen.fingerprint : allClubs[0];
+  state.selectedClubByScreen.fingerprint = selClub;
+  const allShots = shotsForBundleAndClub(bundle, selClub);
+  const stats = computeStats(allShots, selClub, clubMode(selClub)==='performance'?state.calibrationView:'raw');
+  const sessionCount = bundleSessions.filter(s=>s.shots.some(sh=>sh.club===selClub)).length;
+
+  root.innerHTML = `
+    <div class="card">
+      <div class="t-head" style="font-size:24px;margin-bottom:12px;">My Game</div>
+      <div class="club-tabs">
+        ${allClubs.map(c=>`<button class="club-tab ${c===selClub?'active':''}" data-fclub="${c}">${c}</button>`).join('')}
+      </div>
+    </div>
+    ${renderFingerprintCard(stats, sessionCount)}
+    ${stats.mode==='performance' ? renderGappingCard(bundle) : ''}
+    ${stats.mode==='performance' ? renderInsightCards(stats) : renderDirInsightCard(stats)}
+  `;
+  document.querySelectorAll('[data-fclub]').forEach(b=>b.onclick=()=>{state.selectedClubByScreen.fingerprint=b.dataset.fclub;render();});
+}
+
+function renderFingerprintCard(stats, sessionCount) {
+  const fp = stats.fp;
+  const r  = stats.recipe;
+  const view = stats.mode==='performance'?state.calibrationView:'raw';
+  const isPerf = stats.mode==='performance';
+  const rangeVal = (lo,hi,d=0,suf='') => isFinite(lo)&&isFinite(hi) ? `${fmt(lo,d)}–${fmt(hi,d)}${suf}` : '—';
+
+  if (!isPerf) {
+    return `<div class="card">
+      <div class="t-label" style="margin-bottom:4px;">Fingerprint · ${stats.club}</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:12px;">${sessionCount} session${sessionCount!==1?'s':''} · ${stats.total} shots</div>
+      <div class="fp-block">
+        <div class="fp-row"><span class="fp-label">Start direction</span><span class="fp-value">${isFinite(fp.startLo)&&isFinite(fp.startHi)?`${fmtDir(fp.startLo,1)} to ${fmtDir(fp.startHi,1)}`:'—'}</span></div>
+        <div class="fp-row"><span class="fp-label">Club path</span><span class="fp-value">${rangeVal(fp.pathLo,fp.pathHi,1,'°')}</span></div>
+        <div class="fp-row"><span class="fp-label">Face angle</span><span class="fp-value">${rangeVal(fp.faceLo,fp.faceHi,1,'°')}</span></div>
+      </div>
+    </div>`;
+  }
+
+  const shapeLabel = (() => {
+    if (!isFinite(r?.ftpMed)||!isFinite(r?.pathMed)) return null;
+    const ftp = r.ftpMed, path = r.pathMed;
+    if (ftp < -2.5) return 'Strong draw';
+    if (ftp >= -2.5 && ftp < -0.5 && path > 0) return 'Controlled draw';
+    if (ftp >= -0.5 && ftp <= 0.5) return 'Straight';
+    if (ftp > 0.5 && ftp <= 2.5 && path < 0) return 'Controlled fade';
+    if (ftp > 2.5) return 'Strong fade';
+    return 'Mixed shape';
+  })();
+
+  const conBadge = (std) => {
+    if (!isFinite(std)) return '';
+    const label = std<=1?'tight':std<=2?'moderate':'variable';
+    const col = std<=1?'var(--great)':std<=2?'var(--playable)':'var(--miss)';
+    return `<span style="font-family:var(--mono);font-size:9px;color:${col};margin-left:6px;">${label}</span>`;
+  };
+
+  return `<div class="card">
+    <div class="row" style="align-items:flex-start;margin-bottom:14px;">
+      <div>
+        <div class="t-label" style="margin-bottom:3px;">Stock shot recipe · ${stats.club}</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text2);">${sessionCount} session${sessionCount!==1?'s':''} · ${r?.count||0} qualifying shots</div>
+      </div>
+      ${shapeLabel ? `<div style="font-family:var(--head);font-weight:700;font-size:13px;letter-spacing:.04em;color:var(--accent2);text-align:right;line-height:1.2;">${esc(shapeLabel)}</div>` : ''}
+    </div>
+    ${r && r.count >= 3 ? `
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px;">
+      <div class="t-label" style="margin-bottom:10px;">When I hit it well, this is what it looks like</div>
+      <div class="g2">
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Club path</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:600;">${fmt(r.pathMed,1)}°${conBadge(r.pathStd)}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">${r.pathMed>0.5?'In-to-out':r.pathMed<-0.5?'Out-to-in':'Neutral'}</div>
+        </div>
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Face angle</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:600;">${fmt(r.faceMed,1)}°${conBadge(r.faceStd)}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">${r.faceMed>0.3?'Open':r.faceMed<-0.3?'Closed':'Square'}</div>
+        </div>
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Face-to-path</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:600;">${fmt(r.ftpMed,1)}°${conBadge(r.ftpStd)}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">${r.ftpMed<-0.5?'Closed to path — draws':r.ftpMed>0.5?'Open to path — fades':'Matched — straight'}</div>
+        </div>
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Attack angle</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:600;">${isFinite(r.aaMed)?fmt(r.aaMed,1)+'°':'—'}${conBadge(r.aaStd)}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">${isFinite(r.aaMed)?(r.aaMed<-2?'Descending — good for irons':r.aaMed>0?'Ascending':'Shallow'):'—'}</div>
+        </div>
+        <div style="padding:8px 0;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Start direction</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:600;">${fmtDir(r.startMed,1)}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">Typical start line</div>
+        </div>
+        <div style="padding:8px 0;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">Carry</div>
+          <div style="font-family:var(--mono);font-size:17px;font-weight:600;">${fmt(r.carryMed,0)} yd</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;">Stock distance</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6;">
+        Aim to repeat: path ${fmt(r.pathMed,1)}° · face ${fmt(r.faceMed,1)}° · AA ${isFinite(r.aaMed)?fmt(r.aaMed,1)+'°':'—'} · start ${fmtDir(r.startMed,1)}
+      </div>
+    </div>` : `<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px 0;">Hit more Great and Stock shots to build your recipe — need at least 3.</div>`}
+    <div class="fp-block">
+      <div class="fp-row"><span class="fp-label">Carry range</span><span class="fp-value">${rangeVal(fp.carryLo,fp.carryHi,0,' yd')}</span></div>
+      <div class="fp-row"><span class="fp-label">Ball speed</span><span class="fp-value">${rangeVal(fp.bsLo,fp.bsHi,1,' mph')}</span></div>
+      <div class="fp-row"><span class="fp-label">Max offline</span><span class="fp-value">≤ ${fmt(fp.offHi,1)} yd</span></div>
+      <div class="fp-row"><span class="fp-label">Path range</span><span class="fp-value">${rangeVal(fp.pathLo,fp.pathHi,1,'°')}</span></div>
+      <div class="fp-row"><span class="fp-label">Face range</span><span class="fp-value">${rangeVal(fp.faceLo,fp.faceHi,1,'°')}</span></div>
+      <div class="fp-row"><span class="fp-label">Face-to-path</span><span class="fp-value">${rangeVal(fp.ftpLo,fp.ftpHi,1,'°')}</span></div>
+      <div class="fp-row"><span class="fp-label">Median total</span><span class="fp-value">${fmt(stats.totalMed,0)} yd</span></div>
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;">IQR ranges from Great &amp; Stock shots · ${state.calibrationView==='calibrated'?'On course figures':'Raw foam ball figures'}</div>
+  </div>`;
+}
+
+function renderGappingCard(bundle='all') {
+  const bundleSessions = sessionsForBundle(bundle);
+  const perfClubs = [...new Set(bundleSessions.flatMap(s=>s.clubsUsed.filter(c=>clubMode(c)==='performance')))].sort((a,b)=>sortClub(a)-sortClub(b));
+  if(perfClubs.length<2) return '';
+  const rows = perfClubs.map(c=>{
+    const shots = shotsForBundleAndClub(bundle, c);
+    const st = computeStats(shots, c, state.calibrationView);
+    return { club:c, carry:st.carryMed, bs:st.bsMed, total:st.totalMed };
+  });
+  const bundleLabel = BUNDLES.find(b=>b.key===bundle)?.label || 'All time';
+  return `<div class="card">
+    <div class="t-label" style="margin-bottom:10px;">Estimated gapping · ${esc(bundleLabel)}</div>
+    <div style="overflow-x:auto;">
+      <table class="gap-table">
+        <thead><tr><th>Club</th><th>Carry</th><th>Total</th><th>Ball spd</th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`<tr>
+            <td style="font-weight:600;">${r.club}</td>
+            <td>${fmt(r.carry,0)} yd</td>
+            <td>${fmt(r.total,0)} yd</td>
+            <td>${fmt(r.bs,1)} mph</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:var(--mono);">${state.calibrationView==='calibrated'?'On course figures.':'Raw foam ball figures — toggle On course for on-course estimate.'}</div>
+  </div>`;
+}
+
+function renderInsightCards(stats) {
+  const strike = buildStrikeInsight(stats);
+  const face   = buildFaceInsight(stats);
+  const lp     = buildLowPointInsight(stats);
+  const sc = s => s.signal==='positive'?'ic-positive':s.signal==='warning'?'ic-warning':'ic-alert';
+  return `
+    <div class="card">
+      <div class="t-label" style="margin-bottom:12px;">Actionable insights · ${stats.club}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="insight-card ${sc(strike)}"><div class="ic-tag">Contact consistency</div><div class="ic-title">${esc(strike.title)}</div><div class="ic-body">${esc(strike.body)}</div></div>
+        <div class="insight-card ${sc(lp)}"><div class="ic-tag">Low-point control</div><div class="ic-title">${esc(lp.title)}</div><div class="ic-body">${esc(lp.body)}</div></div>
+        <div class="insight-card ${sc(face)}"><div class="ic-tag">Face &amp; path</div><div class="ic-title">${esc(face.title)}</div><div class="ic-body">${esc(face.body)}</div></div>
+      </div>
+    </div>`;
+}
+
+function renderDirInsightCard(stats) {
+  const good = pctNum(stats.byGrade.good||0,stats.total);
+  const sig = good>=50?'ic-positive':good>=30?'ic-warning':'ic-alert';
+  return `<div class="card">
+    <div class="t-label" style="margin-bottom:12px;">Direction insight · ${stats.club}</div>
+    <div class="insight-card ${sig}">
+      <div class="ic-tag">Start direction control</div>
+      <div class="ic-title">${good>=50?'Direction holding well':good>=30?'Improving but inconsistent':'High miss rate on start direction'}</div>
+      <div class="ic-body">Good reps at ${pctStr(stats.byGrade.good||0,stats.total)}. Median start ${fmtDir(stats.startMed,1)}. Tighten the start window to ≤ ${state.settings.directionalThresholds.good}° to improve the pattern.</div>
+    </div>
+  </div>`;
+}
+
+function buildStrikeInsight(stats) {
+  if (!stats || stats.total < 8) return {signal:'warning', title:'Not enough shots yet', body:'Hit a few more to build a contact benchmark.'};
+  if (!isFinite(stats.bsCV)) return {signal:'warning', title:'Ball speed data missing', body:'Ball speed data needed to assess contact consistency.'};
+  const cv = stats.bsCV, med = stats.bsMed;
+  if (cv <= 3) return {signal:'positive', title:'Contact very consistent', body:`Ball speed CV ${fmt(cv,1)}% — finding the centre of the face reliably. Median ${fmt(med,1)} mph.`};
+  if (cv <= 5) return {signal:'positive', title:'Contact holding well', body:`Ball speed CV ${fmt(cv,1)}% — small spread. A few outliers but the pattern is solid. Median ${fmt(med,1)} mph.`};
+  if (cv <= 8) return {signal:'warning', title:'Contact a little variable', body:`Ball speed CV ${fmt(cv,1)}% — some shots losing speed vs your median of ${fmt(med,1)} mph. Check for thin or off-centre contact.`};
+  return {signal:'alert', title:'Contact inconsistent', body:`Ball speed CV ${fmt(cv,1)}% — significant spread around median ${fmt(med,1)} mph. Off-centre contact is costing distance and reliability.`};
+}
+
+function buildLowPointInsight(stats) {
+  if (!stats || stats.total < 8) return {signal:'warning', title:'Not enough shots yet', body:'More shots needed for low-point analysis.'};
+  const lp = stats.lp;
+  if (!lp || !isFinite(lp.target)) return {signal:'warning', title:'Attack angle data missing', body:'Attack angle data needed to assess low-point control.'};
+  const shallow = lp.shallowPct != null && lp.shallowPct >= 25;
+  const steep   = lp.steepPct   != null && lp.steepPct   >= 25;
+  const clean   = lp.cleanPct   != null && lp.cleanPct   >= 50;
+  const window  = `${fmt(lp.low,1)}° to ${fmt(lp.high,1)}°`;
+  if (clean) return {signal:'positive', title:'Low point well controlled', body:`${lp.cleanPct}% of shots in your strike window (${window}). Target AA ${fmt(lp.target,1)}°. Keep this pattern.`};
+  if (shallow) return {signal:'alert', title:'Low point drifting back', body:`${lp.shallowPct}% of shots are too shallow — club bottoming out before the ball. Return attack angle into ${window}.`};
+  if (steep) return {signal:'alert', title:'Getting steep', body:`${lp.steepPct}% of shots steeper than your window. Bring attack angle back toward ${fmt(lp.target,1)}° (${window}).`};
+  if (isFinite(stats.aaStd) && stats.aaStd >= 2.5) return {signal:'warning', title:'Low point wandering', body:`Attack angle varying shot to shot (σ ${fmt(stats.aaStd,1)}°). Aim to repeat entry angle near ${fmt(lp.target,1)}° consistently.`};
+  return {signal:'warning', title:'Strike window building', body:`Target AA ${fmt(lp.target,1)}° · window ${window} · ${lp.cleanPct}% clean so far. Keep accumulating data.`};
+}
+
+function buildFaceInsight(stats) {
+  if(!stats||stats.total<8||!isFinite(stats.pathMed)||!isFinite(stats.faceMed)) return {signal:'warning',title:'Not enough shots yet',body:'More shots needed to build face-control insight.'};
+  const r = stats.recipe;
+  const ftp=stats.ftpMed, path=stats.pathMed, face=stats.faceMed, off=stats.absOffMed??99;
+  const playPct=(((stats.byGrade.great||0)+(stats.byGrade.stock||0)+(stats.byGrade.playable||0))/stats.total)*100;
+  const tight=playPct>=55&&off<=12;
+  const startDrift = isFinite(stats.startMed) ? stats.startMed : 0;
+  const recipeRef = r&&r.count>=3 ? ` Your recipe: path ${fmt(r.pathMed,1)}°, face ${fmt(r.faceMed,1)}°, F2P ${fmt(r.ftpMed,1)}°.` : '';
+  if(tight&&ftp>=-2&&ftp<=0&&path>=0&&path<=3) return {signal:'positive',title:'Controlled draw pattern',body:`Face ${fmt(ftp,1)}° closed to path with in-to-out path at ${fmt(path,1)}°. Ball starting ${fmtDir(startDrift,1)} then drawing back.${recipeRef} Repeat this relationship.`};
+  if(tight&&ftp>=0&&ftp<=2&&path<=-0&&path>=-3) return {signal:'positive',title:'Controlled fade pattern',body:`Face ${fmt(ftp,1)}° open to path with out-to-in path at ${fmt(path,1)}°. Ball starting ${fmtDir(startDrift,1)} then fading.${recipeRef} Repeat this relationship.`};
+  if(tight&&Math.abs(ftp)<=1&&Math.abs(path)<=1.5) return {signal:'positive',title:'Face and path well matched',body:`Path ${fmt(path,1)}°, face ${fmt(face,1)}°, face-to-path ${fmt(ftp,1)}° — neutral, straight pattern.${recipeRef}`};
+  if(ftp>2.5||(ftp>1.5&&off>10)) return {signal:'alert',title:'Face too open to path',body:`Face-to-path at ${fmt(ftp,1)}°. Push-fade pattern. Close the face relative to path — aim for F2P near ${isFinite(r?.ftpMed)?fmt(r.ftpMed,1)+'°':'0°'}.`};
+  if(ftp<-2.5||(ftp<-1.5&&startDrift<-1)) return {signal:'alert',title:'Face too closed to path',body:`Face-to-path at ${fmt(ftp,1)}°. Pull-draw or hook pattern. Open the face slightly — aim for F2P near ${isFinite(r?.ftpMed)?fmt(r.ftpMed,1)+'°':'0°'}.`};
+  if(Math.abs(path)>4) return {signal:'warning',title:'Path needs attention',body:`Path at ${fmt(path,1)}° is quite ${path>0?'in-to-out':'out-to-in'}. Bring path closer to neutral to tighten dispersion.`};
+  return {signal:'warning',title:'Face control inconsistent',body:`Face-to-path median ${fmt(ftp,1)}° but varying shot to shot. Focus on repeating the same face-to-path relationship.${recipeRef}`};
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROGRESS SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function renderProgress() {
+  const root = document.getElementById('screen-progress');
+  const bundle = state.selectedBundle || 'all';
+  const bundleSessions = sessionsForBundle(bundle);
+  const allClubs = [...new Set(bundleSessions.flatMap(s=>s.clubsUsed))].sort((a,b)=>sortClub(a)-sortClub(b));
+  if(!allClubs.length) {
+    root.innerHTML=`<div class="card"><div class="empty">No sessions in this window.</div></div>`;
+    return;
+  }
+  const selClub = allClubs.includes(state.selectedClubByScreen.progress) ? state.selectedClubByScreen.progress : allClubs[0];
+  state.selectedClubByScreen.progress = selClub;
+  const sessions = [...bundleSessions].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const points = sessions.map(s=>{
+    const shots = s.shots.filter(sh=>sh.club===selClub);
+    if(!shots.length) return null;
+    const st = computeStats(shots, selClub, clubMode(selClub)==='performance'?state.calibrationView:'raw');
+    const aaVals = shots.map(s=>s.attackAngle).filter(isFinite);
+    const ftpVals = shots.map(s=>faceToPath(s)).filter(isFinite);
+    return {
+      label: fmtDate(s.date).replace(/\d{4}/,'').trim().replace(/,$/,''),
+      carry: st.carryMed, absOff: st.absOffMed,
+      playablePct: pctNum((st.byGrade.great||0)+(st.byGrade.stock||0)+(st.byGrade.playable||0), st.total),
+      stockPct: pctNum((st.byGrade.great||0)+(st.byGrade.stock||0), st.total),
+      goodRepPct: pctNum(st.byGrade.good||0, st.total),
+      aaIQR: isFinite(pct(aaVals,.75))&&isFinite(pct(aaVals,.25)) ? pct(aaVals,.75)-pct(aaVals,.25) : null,
+      ftpIQR: isFinite(pct(ftpVals,.75))&&isFinite(pct(ftpVals,.25)) ? pct(ftpVals,.75)-pct(ftpVals,.25) : null,
+      aaLo: pct(aaVals,.25), aaHi: pct(aaVals,.75), aaMed: median(aaVals),
+      ftpLo: pct(ftpVals,.25), ftpHi: pct(ftpVals,.75), ftpMed: median(ftpVals)
+    };
+  }).filter(Boolean);
+
+  const isPerf = clubMode(selClub)==='performance';
+  root.innerHTML = `
+    <div class="card">
+      <div class="t-head" style="font-size:24px;margin-bottom:12px;">Progress</div>
+      <div class="club-tabs">
+        ${allClubs.map(c=>`<button class="club-tab ${c===selClub?'active':''}" data-pclub="${c}">${c}</button>`).join('')}
+      </div>
+    </div>
+    ${points.length<2
+      ? `<div class="card"><div class="empty">Need at least two sessions with ${selClub} data to show progress.</div></div>`
+      : `<div class="g2">
+          ${isPerf
+            ? sparkCard('Playable+', points.map(p=>p.playablePct), points.map(p=>p.label), '%', true)
+              + sparkCard('Median abs offline', points.map(p=>p.absOff), points.map(p=>p.label), ' yd', false)
+            : sparkCard('Good reps', points.map(p=>p.goodRepPct), points.map(p=>p.label), '%', true)
+              + sparkCard('Start spread', points.map(p=>p.absOff), points.map(p=>p.label), ' yd', false)
+          }
+          ${isPerf ? sparkCard('Stock+', points.map(p=>p.stockPct), points.map(p=>p.label), '%', true)
+                   + sparkCard('Median carry', points.map(p=>p.carry), points.map(p=>p.label), ' yd', true) : ''}
+        </div>
+        ${isPerf && points.some(p=>isFinite(p.aaIQR)) ? renderCorridorChart(points,'aaLo','aaHi','aaMed','Attack angle (°)') : ''}
+        ${isPerf && points.some(p=>isFinite(p.ftpIQR)) ? renderCorridorChart(points,'ftpLo','ftpHi','ftpMed','Face-to-path (°)') : ''}`
+    }`;
+  document.querySelectorAll('[data-pclub]').forEach(b=>b.onclick=()=>{state.selectedClubByScreen.progress=b.dataset.pclub;render();});
+}
+
+function sparkCard(title, values, labels, suffix='', higherBetter=true) {
+  const finite = values.filter(isFinite);
+  if(!finite.length) return `<div class="progress-card"><div class="pc-label">${esc(title)}</div><div class="pc-value">—</div></div>`;
+  const latest = finite[finite.length-1], first = finite[0];
+  const delta = isFinite(latest)&&isFinite(first) ? latest-first : null;
+  const improving = delta===null ? null : higherBetter ? delta>0 : delta<0;
+  const deltaClass = improving===null?'delta-flat':improving?'delta-up':'delta-down';
+  const pts = sparkPoints(values, 280, 80, 14);
+  return `<div class="progress-card">
+    <div class="pc-label">${esc(title)}</div>
+    <div class="pc-value">${fmt(latest,0)}${suffix}</div>
+    <div class="pc-delta ${deltaClass}">${delta===null?'—':`${delta>0?'↑':'↓'} ${fmt(Math.abs(delta),0)}${suffix} vs first`}</div>
+    <svg viewBox="0 0 280 80" style="width:100%;display:block;margin-top:8px;">
+      <polyline points="${pts.line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${pts.dots}
+    </svg>
+  </div>`;
+}
+
+function sparkPoints(values, W, H, pad) {
+  const finite = values.filter(isFinite);
+  if(!finite.length) return {line:'',dots:''};
+  const mn=Math.min(...finite), mx=Math.max(...finite), span=mx-mn||1;
+  const coords = values.map((v,i)=>{
+    if(!isFinite(v)) return null;
+    const x=pad+(i/Math.max(1,values.length-1))*(W-pad*2);
+    const y=H-pad-((v-mn)/span)*(H-pad*2);
+    return {x,y};
+  }).filter(Boolean);
+  return {
+    line: coords.map(p=>`${p.x},${p.y}`).join(' '),
+    dots: coords.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="var(--accent)"/>`).join('')
+  };
+}
+
+function renderCorridorChart(points, loKey, hiKey, medKey, label) {
+  const W=560,H=220,pL=48,pR=16,pT=24,pB=38;
+  const n = points.length; if(n<2) return '';
+  const loVals=points.map(p=>p[loKey]).filter(isFinite), hiVals=points.map(p=>p[hiKey]).filter(isFinite), medVals=points.map(p=>p[medKey]).filter(isFinite);
+  if(!loVals.length) return '';
+  const allV=[...loVals,...hiVals,...medVals];
+  const vMin=Math.min(...allV)-0.5, vMax=Math.max(...allV)+0.5;
+  const xs=i=>pL+(i/(n-1))*(W-pL-pR);
+  const ys=v=>pT+(H-pT-pB)*(1-(v-vMin)/(vMax-vMin));
+  const bandPts=points.map((p,i)=>isFinite(p[hiKey])?`${xs(i)},${ys(p[hiKey])}`:'').filter(Boolean).join(' ')
+    +' '+[...points].reverse().map((p,i)=>isFinite(p[loKey])?`${xs(n-1-i)},${ys(p[loKey])}`:'').filter(Boolean).join(' ');
+  const medLine=points.map((p,i)=>isFinite(p[medKey])?`${xs(i)},${ys(p[medKey])}`:'').filter(Boolean).join(' ');
+  const firstW=isFinite(points[0][hiKey])&&isFinite(points[0][loKey])?points[0][hiKey]-points[0][loKey]:null;
+  const lastW=isFinite(points[n-1][hiKey])&&isFinite(points[n-1][loKey])?points[n-1][hiKey]-points[n-1][loKey]:null;
+  const narrowPct=isFinite(firstW)&&isFinite(lastW)&&firstW>0?Math.round((1-lastW/firstW)*100):null;
+  let gridLines='';
+  const step=(vMax-vMin)/4;
+  for(let i=0;i<=4;i++){const v=vMin+i*step,ly=ys(v);gridLines+=`<line x1="${pL}" y1="${ly}" x2="${W-pR}" y2="${ly}" stroke="#1e1e2a" stroke-width="1"/><text x="${pL-6}" y="${ly+4}" fill="#6a6a80" font-size="9" text-anchor="end">${fmt(v,1)}°</text>`;}
+  return `<div class="card" style="padding:14px;margin-bottom:10px;">
+    <div class="row" style="margin-bottom:12px;">
+      <div class="t-label">${esc(label)} · corridor</div>
+      ${narrowPct!==null?`<div style="font-family:var(--mono);font-size:10px;color:${narrowPct>0?'var(--great)':'var(--miss)'};">${narrowPct>0?'↓':'↑'}${Math.abs(narrowPct)}% ${narrowPct>0?'tighter':'wider'}</div>`:''}
+    </div>
+    <div class="plot-wrap">
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;">
+        <rect width="${W}" height="${H}" fill="#060810"/>
+        ${gridLines}
+        <line x1="${pL}" y1="${ys(0)}" x2="${W-pR}" y2="${ys(0)}" stroke="#2a3550" stroke-width="1" stroke-dasharray="4 3"/>
+        <polygon points="${bandPts}" fill="rgba(61,126,255,.12)"/>
+        <polyline points="${medLine}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        ${points.map((p,i)=>isFinite(p[medKey])?`<circle cx="${xs(i)}" cy="${ys(p[medKey])}" r="3.5" fill="var(--accent)" stroke="#060810" stroke-width="1.5"/>`:'').join('')}
+        ${points.map((p,i)=>`<text x="${xs(i)}" y="${H-pB+16}" fill="#4a5468" font-size="8" text-anchor="middle">${esc(p.label)}</text>`).join('')}
+      </svg>
+    </div>
+    <div style="display:flex;gap:14px;margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--muted);">
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:20px;height:8px;background:rgba(61,126,255,.2);border-radius:2px;display:inline-block;"></span>IQR band</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:16px;height:2px;background:var(--accent);display:inline-block;"></span>Median</span>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SETTINGS SCREEN
+// ════════════════════════════════════════════════════════════════════════════
+function renderSettings() {
+  const root = document.getElementById('screen-settings');
+  const T = state.settings.performanceThresholds;
+  const ST = state.settings.startDirectionPerformance;
+  const DT = state.settings.directionalThresholds;
+  root.innerHTML = `
+    <div class="card">
+      <div class="t-head" style="font-size:24px;margin-bottom:4px;">Settings</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;">v${APP.VERSION} · ${APP.BUILD_DATE}</div>
+    </div>
+    <div class="card">
+      <div class="t-label" style="margin-bottom:12px;">Performance thresholds (offline yd)</div>
+      <div class="settings-grid">
+        <label class="settings-label">Great ≤<input class="settings-input" id="tGreat" type="number" step="0.5" value="${T.great}"/></label>
+        <label class="settings-label">Stock ≤<input class="settings-input" id="tStock" type="number" step="0.5" value="${T.stock}"/></label>
+        <label class="settings-label">Playable ≤<input class="settings-input" id="tPlayable" type="number" step="0.5" value="${T.playable}"/></label>
+        <label class="settings-label">Miss ≤<input class="settings-input" id="tMiss" type="number" step="0.5" value="${T.miss}"/></label>
+      </div>
+      <div class="t-label" style="margin-top:14px;margin-bottom:10px;">Start direction thresholds (°)</div>
+      <div class="settings-grid">
+        <label class="settings-label">Great ≤<input class="settings-input" id="stGreat" type="number" step="0.1" value="${ST.great}"/></label>
+        <label class="settings-label">Stock ≤<input class="settings-input" id="stStock" type="number" step="0.1" value="${ST.stock}"/></label>
+        <label class="settings-label">Playable ≤<input class="settings-input" id="stPlayable" type="number" step="0.1" value="${ST.playable}"/></label>
+        <label class="settings-label">Miss ≤<input class="settings-input" id="stMiss" type="number" step="0.1" value="${ST.miss}"/></label>
+      </div>
+      <div class="t-label" style="margin-top:14px;margin-bottom:10px;">Directional club thresholds</div>
+      <div class="settings-grid">
+        <label class="settings-label">Good rep ≤<input class="settings-input" id="dtGood" type="number" step="0.1" value="${DT.good}"/></label>
+        <label class="settings-label">Acceptable ≤<input class="settings-input" id="dtAcc" type="number" step="0.1" value="${DT.acceptable}"/></label>
+        <label class="settings-label">BS soft floor<input class="settings-input" id="bsFloor" type="number" step="0.01" value="${state.settings.ballSpeedSoftFloorPct}"/></label>
+      </div>
+      <div class="btn-row" style="margin-top:14px;"><button class="btn-primary" id="saveThresh">Save thresholds</button></div>
+    </div>
+    <div class="card">
+      <div class="t-label" style="margin-bottom:8px;">On course calibration</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:12px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);">
+        Model: <span style="color:var(--text2);">${APP.CALIBRATION_MODEL_LABEL}</span><br/>
+        Formula: real BS = foam BS × BS mult · carry = real BS × carry coeff · total = carry × total factor<br/>
+        Carry coeff (1.31) and BS multipliers are player-derived from paired range sessions.
+      </div>
+      ${Object.keys(state.calibration).sort((a,b)=>sortClub(a)-sortClub(b)).map(club=>{
+        const c=state.calibration[club];
+        return `<details style="border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;overflow:hidden;">
+          <summary style="padding:10px 12px;cursor:pointer;font-family:var(--mono);font-size:13px;font-weight:500;list-style:none;display:flex;justify-content:space-between;align-items:center;">${club}<span style="color:var(--muted);font-size:10px;">edit</span></summary>
+          <div style="padding:12px;border-top:1px solid var(--border);background:var(--surface2);">
+            <div class="settings-grid">
+              <label class="settings-label">BS mult (foam→real)<input class="settings-input" data-cal="${club}" data-ckey="bsMult" type="number" step="0.01" value="${fmt(c.bsMult,2)}"/></label>
+              <label class="settings-label">Carry coeff (×real BS)<input class="settings-input" data-cal="${club}" data-ckey="carryPerMph" type="number" step="0.01" value="${fmt(c.carryPerMph,2)}"/></label>
+              <label class="settings-label">Total factor (÷carry)<input class="settings-input" data-cal="${club}" data-ckey="totalFactor" type="number" step="0.01" value="${fmt(c.totalFactor,2)}"/></label>
+              <label class="settings-label">Source<input class="settings-input" data-cal="${club}" data-ckey="source" type="text" value="${esc(c.source||'')}"/></label>
+            </div>
+          </div>
+        </details>`;
+      }).join('')}
+      <div class="btn-row" style="margin-top:10px;"><button class="btn-primary" id="saveCal">Save calibration</button></div>
+    </div>
+    <div class="card">
+      <div class="t-label" style="margin-bottom:12px;">Data</div>
+      <div class="btn-row">
+        <button class="btn-secondary" id="exportBtn">Export backup</button>
+        <label class="file-label btn-secondary" for="importBackup">Import backup</label>
+        <input class="file-input" id="importBackup" type="file" accept=".json,.csv"/>
+        <button class="btn-danger" id="clearBtn">Clear all data</button>
+      </div>
+    </div>`;
+
+  document.getElementById('saveThresh').onclick = () => {
+    const g = id => parseFloat(document.getElementById(id).value);
+    state.settings.performanceThresholds = { great:g('tGreat'), stock:g('tStock'), playable:g('tPlayable'), miss:g('tMiss') };
+    state.settings.startDirectionPerformance = { great:g('stGreat'), stock:g('stStock'), playable:g('stPlayable'), miss:g('stMiss') };
+    state.settings.directionalThresholds = { good:g('dtGood'), acceptable:g('dtAcc') };
+    state.settings.ballSpeedSoftFloorPct = g('bsFloor');
+    render();
+  };
+  document.getElementById('saveCal').onclick = () => {
+    document.querySelectorAll('[data-cal]').forEach(el=>{
+      const club=el.dataset.cal, key=el.dataset.ckey;
+      if(!state.calibration[club]) state.calibration[club]={};
+      state.calibration[club][key] = key==='source' ? el.value.trim() : parseFloat(el.value)||0;
+    });
+    render();
+  };
+  document.getElementById('exportBtn').onclick = exportBackup;
+  const _backupInput = document.getElementById('importBackup');
+  _backupInput.addEventListener('change', e => { handleImport(e); _backupInput.value = ''; });
+  document.getElementById('clearBtn').onclick = clearData;
+}
+
+function handleImport(e) {
+  const file = e.target.files?.[0]; if(!file) return;
+  const name = file.name.toLowerCase();
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      if(name.endsWith('.json')) {
+        const p = JSON.parse(ev.target.result||'{}');
+        if(!p.state) throw new Error('Not a valid backup.');
+        state = deepMerge(clone(DEFAULTS), p.state);
+      } else {
+        const session = parseCsv(ev.target.result||'', file.name);
+        state.sessions.push(session);
+        state.selectedSessionId = session.id;
+        currentTab = 'sessions';
+      }
+      render();
+    } catch(err) { alert(`Import failed: ${err.message}`); }
+    finally { e.target.value=''; }
+  };
+  reader.readAsText(file);
+}
+function exportBackup() {
+  const blob = new Blob([JSON.stringify({appVersion:APP.VERSION,exportedAt:new Date().toISOString(),state},null,2)],{type:'application/json'});
+  const a = Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:APP.EXPORT_FILENAME()});
+  a.click(); URL.revokeObjectURL(a.href);
+}
+async function clearData() {
+  const ok = await confirmDialog('Clear all data?','This will remove all sessions and reset to defaults on this device.','Clear','danger');
+  if(!ok) return;
+  localStorage.removeItem(APP.STORAGE_KEY);
+  state = clone(DEFAULTS);
+  render();
+}
+
+function openShotModal(sid, club, idx) {
+  const session = state.sessions.find(s=>s.id===sid)||state.sessions.find(s=>s.shots.some(sh=>sh.club===club&&sh.index===+idx));
+  if(!session) return;
+  const shot = session.shots.find(s=>s.club===club&&s.index===+idx);
+  if(!shot) return;
+  const mode = clubMode(club);
+  const classified = mode==='performance' ? classifyPerf(session.shots.filter(s=>s.club===club),state.calibrationView) : classifyDir(session.shots.filter(s=>s.club===club));
+  const cs = classified.find(s=>s.index===+idx)||shot;
+  const view = mode==='performance'?state.calibrationView:'raw';
+  const rows = [
+    ['Grade',gradeChip(cs.grade)],['Ball speed',`${fmt(getMetric(cs,'ballSpeed',view),1)} mph`],
+    ['Carry',`${fmt(getMetric(cs,'carry',view),0)} yd`],['Total',`${fmt(getMetric(cs,'total',view),0)} yd`],
+    ['Offline',fmtDir(cs.offline,1).replace('°',' yd')],['Start dir',fmtDir(cs.startDirection,1)],
+    ['Launch angle',`${fmt(cs.launchAngle,1)}°`],['Spin rate',`${fmt(cs.spinRate,0)} rpm`],
+    ['Attack angle',isFinite(cs.attackAngle)?`${fmt(cs.attackAngle,1)}°`:'—'],
+    ['Club path',isFinite(cs.clubPath)?`${fmt(cs.clubPath,1)}°`:'—'],
+    ['Face angle',isFinite(cs.faceAngle)?`${fmt(cs.faceAngle,1)}°`:'—'],
+    ['Face-to-path',isFinite(faceToPath(cs))?`${fmt(faceToPath(cs),1)}°`:'—'],
+  ];
+  document.getElementById('modalTitle').textContent = `${club} · Shot ${+idx+1}`;
+  document.getElementById('modalBody').innerHTML = `<div class="g2">${rows.map(([l,v])=>`<div class="mtile"><div class="ml">${esc(l)}</div><div class="mv" style="font-size:16px;">${v}</div></div>`).join('')}</div>`;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+window.openShotModal = openShotModal;
+document.getElementById('closeModal').onclick = ()=>document.getElementById('modalBackdrop').classList.remove('open');
+document.getElementById('modalBackdrop').onclick = e=>{ if(e.target.id==='modalBackdrop') document.getElementById('modalBackdrop').classList.remove('open'); };
+
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-shot-open]');
+  if(t) openShotModal(t.dataset.sid, t.dataset.club, t.dataset.idx);
+  const sc = e.target.closest('[data-sclub]');
+  if(sc) { state.selectedClubByScreen.sessions = sc.dataset.sclub; state.selectedGradeFilter = 'all'; render(); }
+  const gf = e.target.closest('[data-grade-filter]');
+  if(gf) { state.selectedGradeFilter = gf.dataset.gradeFilter; render(); }
+});
+
+let _confirmResolve = null;
+function confirmDialog(title, body, label='Confirm', variant='danger') {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmBody').textContent = body;
+  const ok = document.getElementById('confirmOk');
+  ok.textContent = label; ok.className = variant==='danger'?'btn-danger':'btn-primary';
+  document.getElementById('confirmBackdrop').classList.add('open');
+  return new Promise(res=>{ _confirmResolve=res; });
+}
+function resolveConfirm(v) { document.getElementById('confirmBackdrop').classList.remove('open'); _confirmResolve?.(v); _confirmResolve=null; }
+document.getElementById('confirmCancel').onclick = ()=>resolveConfirm(false);
+document.getElementById('confirmOk').onclick = ()=>resolveConfirm(true);
+document.getElementById('confirmBackdrop').onclick = e=>{ if(e.target.id==='confirmBackdrop') resolveConfirm(false); };
+
+const _globalInput = document.getElementById('globalCsvInput');
+_globalInput.addEventListener('change', e => { handleImport(e); _globalInput.value = ''; });
+
+render();
+</script>
+
+</body>
+</html>
